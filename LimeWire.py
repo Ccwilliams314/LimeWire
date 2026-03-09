@@ -1535,6 +1535,29 @@ class CommandPalette(tk.Toplevel):
         self._commands.append(("\U0001F3A8  Cycle Theme",app._toggle_dark_mode))
         if hasattr(app,'_shortcut_reg'):
             self._commands.append(("\u2328  Show Shortcuts",lambda:app._shortcut_reg.show_help(app)))
+        # Global search: history entries
+        for entry in (app.history or [])[:100]:
+            title=entry.get("title","")
+            if not title: continue
+            url=entry.get("url",""); src=entry.get("source","")[:10]
+            def _go_hist(u=url):
+                sp=app.pages.get("search")
+                if sp and u: sp.url_var.set(u); app._show_tab("search")
+            self._commands.append((f"\U0001F4DC  {title[:40]}  ({src})",_go_hist))
+        # Global search: discovery library
+        disc=app.pages.get("discovery")
+        if disc and hasattr(disc,"_library"):
+            for fp,info in list(disc._library.items())[:100]:
+                bpm=info.get("bpm","?"); key=info.get("key","?")
+                fname=os.path.basename(fp)[:35]
+                def _go_play(f=fp):
+                    pp=app.pages.get("player")
+                    if pp:
+                        if f not in pp._playlist_set:
+                            pp._playlist.append(f); pp._playlist_set.add(f)
+                            pp.plb.insert("end",os.path.basename(f))
+                        app._show_tab("player")
+                self._commands.append((f"\U0001F3B5  {fname}  BPM:{bpm} Key:{key}",_go_play))
         self._filtered=list(self._commands)
         self._refresh_list()
         self._var.trace_add("write",lambda *a:self._filter())
@@ -1634,7 +1657,17 @@ class App(tk.Tk):
             if sp: sp.url_var.set(data); self._show_tab("search")
         elif os.path.exists(data.strip("{}")):
             path=data.strip("{}")
-            if path.lower().endswith((".mp3",".wav",".flac",".ogg",".m4a",".aac")):
+            if not path.lower().endswith((".mp3",".wav",".flac",".ogg",".m4a",".aac",".opus")): return
+            active=self._get_active_tab()
+            page=self.pages.get(active)
+            # Route to active tab if it has a file_var
+            if page and hasattr(page,"file_var"):
+                page.file_var.set(path)
+                # Auto-load if page has a load method
+                if hasattr(page,"_load"): self.after(50,page._load)
+                elif hasattr(page,"_load_file"): self.after(50,page._load_file)
+            else:
+                # Default: add to player playlist
                 pp=self.pages.get("player")
                 if pp and path not in pp._playlist_set:
                     pp._playlist.append(path); pp._playlist_set.add(path)
@@ -3631,6 +3664,8 @@ class EffectsPage(ScrollFrame):
         ClassicCombo(ar,self._fx_var,self._fx_names,width=16).pack(side="left",padx=(0,6))
         LimeBtn(ar,"Add",self._add_fx).pack(side="left",padx=(0,6))
         OrangeBtn(ar,"Clear All",self._clear_fx).pack(side="left",padx=(0,6))
+        ClassicBtn(ar,"Save Preset",self._save_preset).pack(side="left",padx=(0,6))
+        ClassicBtn(ar,"Load Preset",self._load_preset).pack(side="left",padx=(0,6))
 
         # Chain display
         self.chain_frame=tk.Frame(eg,bg=BG); self.chain_frame.pack(fill="x")
@@ -3719,6 +3754,30 @@ class EffectsPage(ScrollFrame):
 
     def _clear_fx(self):
         self._chain=[]; self._render_chain()
+
+    def _save_preset(self):
+        if not self._chain:
+            show_toast(self.app,"No effects to save","warning"); return
+        f=filedialog.asksaveasfilename(defaultextension=".json",
+            filetypes=[("Effect Preset","*.json")],initialfile="my_preset.json")
+        if not f: return
+        try:
+            save_json(f,{"version":1,"chain":self._chain})
+            show_toast(self.app,f"Preset saved: {os.path.basename(f)}","success")
+        except Exception as e:
+            show_toast(self.app,f"Save failed: {e}","error")
+
+    def _load_preset(self):
+        f=filedialog.askopenfilename(filetypes=[("Effect Preset","*.json"),("All","*.*")])
+        if not f: return
+        try:
+            data=load_json(f)
+            chain=data.get("chain",[]) if isinstance(data,dict) else data
+            if not isinstance(chain,list): show_toast(self.app,"Invalid preset file","error"); return
+            self._chain=chain; self._render_chain()
+            show_toast(self.app,f"Loaded {len(chain)} effects from preset","success")
+        except Exception as e:
+            show_toast(self.app,f"Load failed: {e}","error")
 
     def _build_board(self):
         """Build pedalboard.Pedalboard from current chain."""
@@ -4190,6 +4249,7 @@ class EditorPage(ScrollFrame):
         self._segment=None; self._undo_stack=[]; self._redo_stack=[]
         self._sel_start_ms=0; self._sel_end_ms=0; self._drag_start=None
         self._merge_files=[]; self._bars=[]
+        self._zoom=1.0; self._scroll_offset=0.0  # 0.0-1.0 normalized scroll
         self._build(self.inner)
 
     def _build(self,p):
@@ -4209,6 +4269,17 @@ class EditorPage(ScrollFrame):
         self.wave_cv.bind("<ButtonPress-1>",self._on_press)
         self.wave_cv.bind("<B1-Motion>",self._on_drag)
         self.wave_cv.bind("<ButtonRelease-1>",self._on_release)
+        self.wave_cv.bind("<MouseWheel>",self._on_zoom)  # Ctrl+scroll = zoom
+        self.wave_cv.bind("<Shift-MouseWheel>",self._on_hscroll)  # Shift+scroll = pan
+        # Zoom controls
+        zf=tk.Frame(wg,bg=BG); zf.pack(fill="x",padx=4,pady=(0,2))
+        ClassicBtn(zf,"Zoom In (+)",self._zoom_in).pack(side="left",padx=(0,4))
+        ClassicBtn(zf,"Zoom Out (-)",self._zoom_out).pack(side="left",padx=(0,4))
+        ClassicBtn(zf,"Fit All",self._zoom_reset).pack(side="left",padx=(0,8))
+        self._zoom_lbl=tk.Label(zf,text="1.0x",font=F_SMALL,bg=BG,fg=TEXT_DIM)
+        self._zoom_lbl.pack(side="left",padx=(0,8))
+        self._hscroll=tk.Scrollbar(wg,orient="horizontal",command=self._on_scrollbar)
+        self._hscroll.pack(fill="x",padx=4)
         # Time labels
         tf=tk.Frame(wg,bg=BG); tf.pack(fill="x",padx=4)
         self.time_start_lbl=tk.Label(tf,text="Start: 0.000s",font=F_SMALL,bg=BG,fg=TEXT_DIM)
@@ -4300,31 +4371,87 @@ class EditorPage(ScrollFrame):
         if not self._segment: return
         cv.update_idletasks()
         w=cv.winfo_width() or 600; h=EDITOR_WAVEFORM_H
-        self._bars=audio_segment_to_waveform(self._segment,w,h)
-        if not self._bars: return
+        dur_ms=len(self._segment)
+        # Compute zoomed sample count — render more bars than canvas width for zoom
+        total_bars=int(w*self._zoom)
+        all_bars=audio_segment_to_waveform(self._segment,total_bars,h)
+        if not all_bars: return
+        # Visible window based on scroll offset
+        visible=len(all_bars)/self._zoom if self._zoom>0 else len(all_bars)
+        start_idx=int(self._scroll_offset*max(0,len(all_bars)-visible))
+        end_idx=int(start_idx+visible)
+        start_idx=max(0,min(start_idx,len(all_bars)-1))
+        end_idx=max(start_idx+1,min(end_idx,len(all_bars)))
+        visible_bars=all_bars[start_idx:end_idx]
+        self._bars=all_bars; self._view_start=start_idx; self._view_end=end_idx
+        # Draw bars scaled to canvas width
         mid=h//2
-        for i,bh in enumerate(self._bars):
-            cv.create_line(i,mid-bh//2,i,mid+bh//2,fill=LIME)
-        # Draw selection overlay
-        if self._segment and self._sel_start_ms<self._sel_end_ms:
-            dur_ms=len(self._segment)
-            if dur_ms>0:
-                x1=int(self._sel_start_ms/dur_ms*w)
-                x2=int(self._sel_end_ms/dur_ms*w)
-                cv.create_rectangle(x1,0,x2,h,fill=LIME,stipple="gray25",outline="")
+        n=len(visible_bars)
+        for i,bh in enumerate(visible_bars):
+            x=int(i*w/n) if n>0 else i
+            cv.create_line(x,mid-bh//2,x,mid+bh//2,fill=LIME)
+        # Draw selection overlay (mapped to visible range)
+        if self._segment and self._sel_start_ms<self._sel_end_ms and dur_ms>0:
+            # Map ms to bar index
+            sel_bar_start=self._sel_start_ms/dur_ms*len(all_bars)
+            sel_bar_end=self._sel_end_ms/dur_ms*len(all_bars)
+            # Map to visible pixel range
+            x1=int((sel_bar_start-start_idx)/(end_idx-start_idx)*w)
+            x2=int((sel_bar_end-start_idx)/(end_idx-start_idx)*w)
+            x1=max(0,min(x1,w)); x2=max(0,min(x2,w))
+            if x2>x1: cv.create_rectangle(x1,0,x2,h,fill=LIME,stipple="gray25",outline="")
+        # Update scrollbar
+        if len(all_bars)>0:
+            thumb_size=min(1.0,1.0/self._zoom)
+            lo=self._scroll_offset*(1.0-thumb_size)
+            self._hscroll.set(lo,lo+thumb_size)
+        self._zoom_lbl.config(text=f"{self._zoom:.1f}x")
 
+    def _px_to_ms(self,x):
+        """Convert canvas pixel x to milliseconds, accounting for zoom/scroll."""
+        if not self._segment: return 0
+        cv=self.wave_cv; w=cv.winfo_width() or 600; dur_ms=len(self._segment)
+        if not hasattr(self,"_view_start"): return int(x/w*dur_ms)
+        total=len(self._bars) if self._bars else w
+        bar_idx=self._view_start+(x/w)*(self._view_end-self._view_start)
+        return int(max(0,min(dur_ms,bar_idx/total*dur_ms)))
     def _on_press(self,e):
         self._drag_start=e.x
     def _on_drag(self,e):
         if self._drag_start is None or not self._segment: return
-        cv=self.wave_cv; w=cv.winfo_width() or 600; dur_ms=len(self._segment)
         x1=min(self._drag_start,e.x); x2=max(self._drag_start,e.x)
-        self._sel_start_ms=int(max(0,x1/w*dur_ms))
-        self._sel_end_ms=int(min(dur_ms,x2/w*dur_ms))
+        self._sel_start_ms=self._px_to_ms(x1)
+        self._sel_end_ms=self._px_to_ms(x2)
         self._update_sel_labels(); self._draw_waveform()
     def _on_release(self,e):
         self._drag_start=None
         self._update_sel_labels()
+    def _on_zoom(self,e):
+        """Ctrl+mousewheel or plain mousewheel to zoom."""
+        if e.delta>0: self._zoom_in()
+        else: self._zoom_out()
+    def _on_hscroll(self,e):
+        """Shift+mousewheel to pan horizontally."""
+        if self._zoom<=1.0: return
+        step=0.05
+        if e.delta>0: self._scroll_offset=max(0.0,self._scroll_offset-step)
+        else: self._scroll_offset=min(1.0,self._scroll_offset+step)
+        self._draw_waveform()
+    def _on_scrollbar(self,*args):
+        """Handle scrollbar commands."""
+        if args[0]=="moveto":
+            thumb_size=min(1.0,1.0/self._zoom)
+            self._scroll_offset=min(1.0,float(args[1])/(1.0-thumb_size)) if thumb_size<1.0 else 0.0
+            self._scroll_offset=max(0.0,min(1.0,self._scroll_offset))
+            self._draw_waveform()
+    def _zoom_in(self):
+        self._zoom=min(32.0,self._zoom*1.5); self._draw_waveform()
+    def _zoom_out(self):
+        self._zoom=max(1.0,self._zoom/1.5)
+        if self._zoom<=1.0: self._scroll_offset=0.0
+        self._draw_waveform()
+    def _zoom_reset(self):
+        self._zoom=1.0; self._scroll_offset=0.0; self._draw_waveform()
 
     def _update_sel_labels(self):
         if not self._segment: return
