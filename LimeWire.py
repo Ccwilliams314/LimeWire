@@ -452,6 +452,8 @@ SCHEDULE_FILE=_migrate_config("schedule")
 SETTINGS_FILE=_migrate_config("settings")
 QUEUE_FILE=_migrate_config("queue")
 ANALYSIS_CACHE_FILE=_migrate_config("analysis_cache")
+SESSION_FILE=_migrate_config("session")
+RECENT_FILES_FILE=_migrate_config("recent_files")
 SUPPRESS=("No supported JavaScript","impersonat","Only deno","js-runtimes","Remote components")
 ACOUSTID_KEY=os.environ.get("ACOUSTID_API_KEY","vNReaS8VLo")
 YDL_BASE={"remote_components":["ejs:github"],"socket_timeout":NETWORK_TIMEOUT}
@@ -1605,6 +1607,7 @@ class App(tk.Tk):
         w,h=min(820,sw-40),min(960,sh-80)
         self.geometry(f"{w}x{h}")
         self.configure(bg=BG)
+        self._apply_dark_titlebar()
         self._lock=threading.Lock(); self._sched_lock=threading.Lock()
         self._completed=0; self._total=0; self._cancel=threading.Event()
         self._dark_mode=False
@@ -1620,9 +1623,52 @@ class App(tk.Tk):
         self._build_notebook(); self._build_statusbar()
         self._start_scheduler(); self._start_clipboard_watch()
         self._bind_shortcuts(); self._setup_dnd()
+        self._restore_session()
         self.protocol("WM_DELETE_WINDOW",self._on_close)
+        # Minimize to taskbar instead of quitting on X (Shift+X to actually close)
+        self.bind("<Shift-Escape>",lambda e:self._on_close())
+    def _save_session(self):
+        """Save current session state (loaded files per tab, active tab, player playlist)."""
+        session={"active_tab":self._get_active_tab(),"files":{},"player_playlist":[]}
+        for name,page in self.pages.items():
+            if hasattr(page,"file_var"):
+                v=page.file_var.get()
+                if v: session["files"][name]=v
+        pp=self.pages.get("player")
+        if pp: session["player_playlist"]=list(pp._playlist)
+        save_json(SESSION_FILE,session)
+    def _restore_session(self):
+        """Restore session state from previous launch."""
+        session=load_json(SESSION_FILE,{})
+        if not session: return
+        # Restore file_vars
+        for name,path in session.get("files",{}).items():
+            page=self.pages.get(name)
+            if page and hasattr(page,"file_var") and os.path.exists(path):
+                page.file_var.set(path)
+        # Restore player playlist
+        pp=self.pages.get("player")
+        if pp:
+            for path in session.get("player_playlist",[]):
+                if os.path.exists(path) and path not in pp._playlist_set:
+                    pp._playlist.append(path); pp._playlist_set.add(path)
+                    pp.plb.insert("end",os.path.basename(path))
+        # Restore active tab
+        tab=session.get("active_tab","")
+        if tab: self.after(100,lambda:self._show_tab(tab))
+    def _apply_dark_titlebar(self):
+        """Use Windows DWM API to set dark title bar matching theme."""
+        if sys.platform!="win32": return
+        try:
+            import ctypes
+            hwnd=ctypes.windll.user32.GetParent(self.winfo_id())
+            DWMWA_USE_IMMERSIVE_DARK_MODE=20
+            val=ctypes.c_int(1 if self._dark_mode else 0)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd,DWMWA_USE_IMMERSIVE_DARK_MODE,ctypes.byref(val),ctypes.sizeof(val))
+        except Exception: pass
     def _on_close(self):
-        """Clean shutdown: stop audio, cancel pending work, destroy window."""
+        """Clean shutdown: save session, stop audio, cancel pending work, destroy."""
+        self._save_session()
         self._cancel.set()
         try: _audio.stop()
         except Exception: pass
@@ -1640,10 +1686,28 @@ class App(tk.Tk):
         self.bind("<space>",lambda e:self._space_toggle(e))
         self.bind("<Control-k>",lambda e:CommandPalette(self))
         self.bind("<Control-question>",lambda e:self._shortcut_reg.show_help(self))
+        # Media key bindings
+        sr.register("Ctrl+Right","Next track",lambda:self._media_next())
+        sr.register("Ctrl+Left","Previous track",lambda:self._media_prev())
+        self.bind("<Control-Right>",lambda e:self._media_next())
+        self.bind("<Control-Left>",lambda e:self._media_prev())
+        self.bind("<Control-Up>",lambda e:self._media_vol(5))
+        self.bind("<Control-Down>",lambda e:self._media_vol(-5))
     def _space_toggle(self,e):
         if isinstance(e.widget,(tk.Entry,ttk.Entry,ttk.Combobox,tk.Text,tk.Listbox,tk.Spinbox)): return
         pp=self.pages.get("player")
         if pp: pp._toggle()
+    def _media_next(self):
+        pp=self.pages.get("player")
+        if pp: pp._next()
+    def _media_prev(self):
+        pp=self.pages.get("player")
+        if pp: pp._prev()
+    def _media_vol(self,delta):
+        pp=self.pages.get("player")
+        if pp and hasattr(pp,"vol"):
+            v=max(0,min(100,pp.vol.get()+delta))
+            pp.vol.set(v); _audio.set_volume(v/100)
     def _setup_dnd(self):
         if not HAS_DND: return
         try:
@@ -1662,7 +1726,7 @@ class App(tk.Tk):
             page=self.pages.get(active)
             # Route to active tab if it has a file_var
             if page and hasattr(page,"file_var"):
-                page.file_var.set(path)
+                page.file_var.set(path); self._add_recent_file(path)
                 # Auto-load if page has a load method
                 if hasattr(page,"_load"): self.after(50,page._load)
                 elif hasattr(page,"_load_file"): self.after(50,page._load_file)
@@ -1674,10 +1738,48 @@ class App(tk.Tk):
                     pp.plb.insert("end",os.path.basename(path))
                 self._show_tab("player")
 
+    def _add_recent_file(self,path):
+        """Track recently opened files (max 15)."""
+        if not path or not os.path.exists(path): return
+        recent=load_json(RECENT_FILES_FILE,[])
+        if path in recent: recent.remove(path)
+        recent.insert(0,path)
+        save_json(RECENT_FILES_FILE,recent[:15])
+        if hasattr(self,"_recent_menu"): self._refresh_recent_menu()
+    def _refresh_recent_menu(self):
+        self._recent_menu.delete(0,"end")
+        recent=load_json(RECENT_FILES_FILE,[])
+        if not recent:
+            self._recent_menu.add_command(label="(none)",state="disabled")
+            return
+        for path in recent[:10]:
+            name=os.path.basename(path)
+            self._recent_menu.add_command(label=name,command=lambda p=path:self._open_recent(p))
+        self._recent_menu.add_separator()
+        self._recent_menu.add_command(label="Clear Recent",command=lambda:(save_json(RECENT_FILES_FILE,[]),self._refresh_recent_menu()))
+    def _open_recent(self,path):
+        """Open a recent file in the active tab or player."""
+        if not os.path.exists(path): show_toast(self,"File not found","warning"); return
+        active=self._get_active_tab()
+        page=self.pages.get(active)
+        if page and hasattr(page,"file_var"):
+            page.file_var.set(path)
+            if hasattr(page,"_load"): self.after(50,page._load)
+            elif hasattr(page,"_load_file"): self.after(50,page._load_file)
+        else:
+            pp=self.pages.get("player")
+            if pp and path not in pp._playlist_set:
+                pp._playlist.append(path); pp._playlist_set.add(path)
+                pp.plb.insert("end",os.path.basename(path))
+            self._show_tab("player")
     def _build_menubar(self):
         mb=tk.Menu(self,font=F_BODY,bg=BG)
         fm=tk.Menu(mb,tearoff=0,font=F_BODY)
         fm.add_command(label="Open Downloads Folder",command=self._open_dl_folder)
+        # Recent Files submenu
+        self._recent_menu=tk.Menu(fm,tearoff=0,font=F_BODY)
+        fm.add_cascade(label="Recent Files",menu=self._recent_menu)
+        self._refresh_recent_menu()
         fm.add_separator(); fm.add_command(label="Exit",command=self.destroy)
         mb.add_cascade(label="File",menu=fm)
         tm=tk.Menu(mb,tearoff=0,font=F_BODY)
@@ -2794,6 +2896,7 @@ class StemsPage(ScrollFrame):
 
         bf=tk.Frame(p,bg=BG); bf.pack(fill="x",padx=10,pady=8)
         LimeBtn(bf,"Split Stems",self._run,width=18).pack(side="left",padx=(0,8))
+        OrangeBtn(bf,"Batch Split",self._batch_run,width=14).pack(side="left",padx=(0,8))
         ClassicBtn(bf,"Open Output Folder",self._open_out).pack(side="left")
 
         pg=GroupBox(p,"Status"); pg.pack(fill="x",padx=10,pady=(0,6))
@@ -2859,6 +2962,34 @@ class StemsPage(ScrollFrame):
         finally:
             self._running=False
 
+    def _batch_run(self):
+        """Queue multiple files for stem separation."""
+        files=filedialog.askopenfilenames(filetypes=[("Audio","*.mp3 *.wav *.flac *.ogg *.m4a"),("All","*.*")])
+        if not files: return
+        if self._running: show_toast(self.app,"Separation already running","warning"); return
+        self._running=True
+        model=self.model_var.get(); mode=self.stems_mode.get()
+        two_stems=None if mode=="all" else mode
+        out=self.out_var.get()
+        total=len(files)
+        self.stem_status.config(text=f"Batch: 0/{total} files processed...",fg=YELLOW)
+        self.stem_prog.configure(value=0)
+        def _do_batch():
+            ok=0; fail=0
+            for i,path in enumerate(files):
+                name=os.path.basename(path)
+                self.after(0,lambda i=i,n=name:self.stem_status.config(text=f"Batch [{i+1}/{total}]: {n}...",fg=YELLOW))
+                try:
+                    result=run_demucs(path,out,model,two_stems)
+                    if result is True: ok+=1
+                    else: fail+=1
+                except Exception: fail+=1
+                self.after(0,lambda p=int(((i+1)/total)*100):self.stem_prog.configure(value=p))
+            msg=f"Batch done — {ok} succeeded"+(f", {fail} failed" if fail else "")
+            self.after(0,lambda:(self.stem_status.config(text=msg,fg=LIME_DK if fail==0 else YELLOW),
+                self.app.set_status(msg)))
+            self._running=False
+        threading.Thread(target=_do_batch,daemon=True).start()
     def _open_out(self):
         open_folder(self.out_var.get())
 
@@ -3362,7 +3493,10 @@ class PlayerPage(ScrollFrame):
         except Exception: self._dur=0
         # Generate waveform in background
         threading.Thread(target=self._gen_wave,args=(path,),daemon=True).start()
-        try: _audio.load(path); _audio.set_volume(self.vol.get()/100); _audio.play(); self._playing=True; self.play_b.config(text="Pause")
+        try:
+            _audio.load(path); _audio.set_volume(self.vol.get()/100); _audio.play(); self._playing=True; self.play_b.config(text="Pause")
+            show_toast(self.app,f"Now Playing: {name}","info")
+            self.app._add_recent_file(path)
         except Exception as e: messagebox.showerror("LimeWire",str(e))
         # Up Next indicator
         nxt_idx=idx+1
@@ -3882,7 +4016,8 @@ class DiscoveryPage(ScrollFrame):
         mr=tk.Frame(mg,bg=BG); mr.pack(fill="x")
         OrangeBtn(mr,"Find Compatible Tracks",self._find_harmonic).pack(side="left",padx=(0,6))
         ClassicBtn(mr,"Generate DJ Playlist",self._gen_playlist).pack(side="left",padx=(0,6))
-        ClassicBtn(mr,"Export Playlist (.m3u)",self._export_m3u).pack(side="left")
+        ClassicBtn(mr,"Export Playlist (.m3u)",self._export_m3u).pack(side="left",padx=(0,6))
+        ClassicBtn(mr,"Export CSV",self._export_csv).pack(side="left")
         self.mix_status=tk.Label(mg,text="Select a track in the library, then find harmonically compatible tracks",
                                  font=F_SMALL,bg=BG,fg=TEXT_DIM,anchor="w")
         self.mix_status.pack(fill="x",pady=(4,0))
@@ -3901,6 +4036,7 @@ class DiscoveryPage(ScrollFrame):
         self._sort_mode=tk.StringVar(value="Harmonic Flow")
         ClassicCombo(spf,self._sort_mode,["Harmonic Flow","BPM Ramp Up","BPM Ramp Down","Key Groups"],width=16).pack(side="left",padx=SP_SM)
         LimeBtn(spf,"Smart Generate",self._smart_playlist).pack(side="left",padx=SP_SM)
+        OrangeBtn(spf,"Send to Player",self._send_to_player).pack(side="left",padx=SP_SM)
 
         # Playlist
         pg=GroupBox(p,"Generated Playlist"); pg.pack(fill="x",padx=10,pady=(0,10))
@@ -4028,6 +4164,33 @@ class DiscoveryPage(ScrollFrame):
                     dur=0  # could compute if needed
                     f.write(f"#EXTINF:{dur},{info.get('file','')}\n{fp}\n")
             self.mix_status.config(text=f"Exported: {os.path.basename(path)}",fg=LIME_DK)
+
+    def _export_csv(self):
+        """Export library analysis results to CSV."""
+        if not self._library: show_toast(self.app,"Scan a library first","warning"); return
+        path=filedialog.asksaveasfilename(defaultextension=".csv",filetypes=[("CSV","*.csv")],initialfile="library_analysis.csv")
+        if not path: return
+        import csv
+        with open(path,"w",newline="",encoding="utf-8") as f:
+            w=csv.writer(f)
+            w.writerow(["File","Path","BPM","Key","Camelot"])
+            for fp,info in sorted(self._library.items(),key=lambda x:x[1].get("bpm") or 0):
+                bpm=f"{info['bpm']:.1f}" if info.get("bpm") else ""
+                w.writerow([info.get("file",""),fp,bpm,info.get("key",""),info.get("camelot","")])
+        show_toast(self.app,f"Exported {len(self._library)} tracks to CSV","success")
+
+    def _send_to_player(self):
+        """Send generated playlist to Player tab."""
+        if not hasattr(self,"_playlist_files") or not self._playlist_files: return
+        pp=self.app.pages.get("player")
+        if not pp: return
+        added=0
+        for fp in self._playlist_files:
+            if fp not in pp._playlist_set:
+                pp._playlist.append(fp); pp._playlist_set.add(fp)
+                pp.plb.insert("end",os.path.basename(fp)); added+=1
+        if added: show_toast(self.app,f"Added {added} tracks to Player","success")
+        self.app._show_tab("player")
 
     def _smart_playlist(self):
         if not self._library:
@@ -4280,6 +4443,10 @@ class EditorPage(ScrollFrame):
         self._zoom_lbl.pack(side="left",padx=(0,8))
         self._hscroll=tk.Scrollbar(wg,orient="horizontal",command=self._on_scrollbar)
         self._hscroll.pack(fill="x",padx=4)
+        # Minimap — full waveform overview with viewport indicator
+        self._minimap=tk.Canvas(wg,bg=CANVAS_BG,height=24,highlightthickness=0)
+        self._minimap.pack(fill="x",padx=4,pady=(2,0))
+        self._minimap.bind("<Button-1>",self._minimap_click)
         # Time labels
         tf=tk.Frame(wg,bg=BG); tf.pack(fill="x",padx=4)
         self.time_start_lbl=tk.Label(tf,text="Start: 0.000s",font=F_SMALL,bg=BG,fg=TEXT_DIM)
@@ -4303,7 +4470,8 @@ class EditorPage(ScrollFrame):
             width=10,font=F_BODY,bg=INPUT_BG,fg=TEXT,relief="flat",bd=1)
         self.sel_end_sp.pack(side="left",padx=(0,10))
         ClassicBtn(sr,"Select All",self._select_all).pack(side="left",padx=(0,6))
-        ClassicBtn(sr,"Apply",self._apply_sel).pack(side="left")
+        ClassicBtn(sr,"Apply",self._apply_sel).pack(side="left",padx=(0,6))
+        ClassicBtn(sr,"Snap Zero-X",self._snap_zero_crossing).pack(side="left")
 
         # Operations
         og=GroupBox(p,"Operations"); og.pack(fill="x",padx=10,pady=(0,6))
@@ -4406,6 +4574,8 @@ class EditorPage(ScrollFrame):
             lo=self._scroll_offset*(1.0-thumb_size)
             self._hscroll.set(lo,lo+thumb_size)
         self._zoom_lbl.config(text=f"{self._zoom:.1f}x")
+        # Update minimap
+        self._draw_minimap(all_bars,start_idx,end_idx)
 
     def _px_to_ms(self,x):
         """Convert canvas pixel x to milliseconds, accounting for zoom/scroll."""
@@ -4452,6 +4622,28 @@ class EditorPage(ScrollFrame):
         self._draw_waveform()
     def _zoom_reset(self):
         self._zoom=1.0; self._scroll_offset=0.0; self._draw_waveform()
+    def _draw_minimap(self,all_bars,view_start,view_end):
+        """Draw minimap showing full waveform with viewport rectangle."""
+        mm=self._minimap; mm.delete("all")
+        if not all_bars: return
+        mm.update_idletasks()
+        w=mm.winfo_width() or 600; h=24; mid=h//2; n=len(all_bars)
+        # Draw full waveform (compressed)
+        for i in range(w):
+            bar_idx=int(i*n/w)
+            if bar_idx<n:
+                bh=max(1,all_bars[bar_idx])
+                mm.create_line(i,mid-bh*mid//max(1,max(all_bars)),i,mid+bh*mid//max(1,max(all_bars)),fill=TEXT_DIM)
+        # Draw viewport rectangle
+        if self._zoom>1.0 and n>0:
+            x1=int(view_start/n*w); x2=int(view_end/n*w)
+            mm.create_rectangle(x1,0,x2,h,outline=LIME,width=2,fill="")
+    def _minimap_click(self,e):
+        """Click minimap to scroll to that position."""
+        if self._zoom<=1.0: return
+        mm=self._minimap; w=mm.winfo_width() or 600
+        self._scroll_offset=max(0.0,min(1.0,e.x/w))
+        self._draw_waveform()
 
     def _update_sel_labels(self):
         if not self._segment: return
@@ -4474,6 +4666,23 @@ class EditorPage(ScrollFrame):
             self._sel_end_ms=int(self.sel_end_var.get())
             self._draw_waveform(); self._update_sel_labels()
         except ValueError: pass
+
+    def _snap_zero_crossing(self):
+        """Snap selection edges to nearest zero-crossing for clean cuts."""
+        if not self._segment or not _ensure_pydub(): return
+        samples=self._segment.get_array_of_samples()
+        sr=self._segment.frame_rate; ch=self._segment.channels
+        def _find_zero(ms,direction=1):
+            idx=int(ms/1000*sr)*ch
+            search=range(idx,min(idx+sr*ch//10,len(samples)-1)) if direction>0 else range(idx,max(idx-sr*ch//10,0),-1)
+            for i in search:
+                if i+1<len(samples) and samples[i]<=0<=samples[i+1] or samples[i]>=0>=samples[i+1]:
+                    return int(i/ch/sr*1000)
+            return ms
+        self._sel_start_ms=_find_zero(self._sel_start_ms,1)
+        self._sel_end_ms=_find_zero(self._sel_end_ms,-1)
+        self._update_sel_labels(); self._draw_waveform()
+        show_toast(self.app,"Snapped to zero-crossings","info")
 
     def _trim(self):
         if not self._segment: return
