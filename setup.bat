@@ -1,8 +1,8 @@
 @echo off
-title LimeWire 1.0 Studio Edition — Setup
+title LimeWire 2.0.2 Studio Edition — Setup
 echo.
 echo  ============================================
-echo   LimeWire 1.0 Studio Edition — Setup
+echo   LimeWire 2.0.2 Studio Edition — Setup
 echo  ============================================
 echo.
 

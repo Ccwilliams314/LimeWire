@@ -1,4 +1,4 @@
-# LimeWire 1.0 Studio Edition — Python Dependencies
+# LimeWire 2.0.2 Studio Edition — Python Dependencies
 # ══════════════════════════════════════════════════
 # Install all:  pip install -r requirements.txt
 # Also needed:  winget install ffmpeg  (or download from ffmpeg.org)

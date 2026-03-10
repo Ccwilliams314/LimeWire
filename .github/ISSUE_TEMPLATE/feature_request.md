@@ -33,4 +33,6 @@ Any other approaches you've thought about.
 - [ ] Batch Processor
 - [ ] Scheduler
 - [ ] History
+- [ ] Cover Art
+- [ ] Settings
 - [ ] New tab / General

@@ -21,8 +21,8 @@ If applicable, add screenshots.
 
 **Environment**
 - OS: [e.g. Windows 11]
-- Python version: [e.g. 3.12.1]
-- LimeWire version: [e.g. 1.0.0]
+- Python version: [e.g. 3.14]
+- LimeWire version: [e.g. 2.0.2]
 
 **Which tab?**
 - [ ] Search & Grab
@@ -43,9 +43,11 @@ If applicable, add screenshots.
 - [ ] Batch Processor
 - [ ] Scheduler
 - [ ] History
+- [ ] Cover Art
+- [ ] Settings
 - [ ] General / Multiple
 
 **Error output**
 ```
-Paste any error messages from the console here
+Paste any error messages here. Crash logs are saved to ~/.limewire_crash.log
 ```
