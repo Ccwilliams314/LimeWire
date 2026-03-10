@@ -4,12 +4,12 @@
   <br>
 </h1>
 
-<h3 align="center">v1.0 Studio Edition &mdash; The Modern Music Utility for Everything</h3>
+<h3 align="center">v1.1 Studio Edition &mdash; The Modern Music Utility for Everything</h3>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10+-blue?style=flat-square&logo=python" alt="Python">
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-0078D6?style=flat-square&logo=windows" alt="Windows">
-  <img src="https://img.shields.io/badge/tabs-18-2ECC71?style=flat-square" alt="18 Tabs">
+  <img src="https://img.shields.io/badge/tabs-19-2ECC71?style=flat-square" alt="19 Tabs">
   <img src="https://img.shields.io/badge/modules-40+-orange?style=flat-square" alt="40+ Integrations">
   <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
 </p>
@@ -26,7 +26,7 @@
 
 ## What is LimeWire?
 
-LimeWire is an **18-tab all-in-one audio production studio** built with Python and tkinter. It started as a simple YouTube downloader and evolved into a comprehensive music utility covering the entire audio workflow &mdash; from downloading and converting, to analysis, editing, stem separation, remixing, and batch processing.
+LimeWire is a **19-tab all-in-one audio production studio** built with Python and tkinter. It started as a simple YouTube downloader and evolved into a comprehensive music utility covering the entire audio workflow &mdash; from downloading and converting, to analysis, editing, stem separation, remixing, and batch processing.
 
 ### Key Highlights
 
@@ -39,6 +39,11 @@ LimeWire is an **18-tab all-in-one audio production studio** built with Python a
 - **Stem remixer** &mdash; mix individual stems with volume, pan, mute/solo
 - **Batch processor** &mdash; normalize, convert, fade, trim silence across many files
 - **Smart playlists** with energy filtering and harmonic key matching
+- **Cover art manager** &mdash; view, add, fetch (iTunes/MusicBrainz), batch-apply album artwork
+- **Effects undo/redo** &mdash; 30-level undo stack for the effects chain
+- **Frequency waveform** &mdash; Editor bars colored by spectral centroid
+- **Batch file rename** &mdash; pattern-based renaming with metadata tokens
+- **Multi-format tagging** &mdash; write analysis results to MP3, FLAC, OGG, M4A
 - **Modern UI** with rounded buttons, gradient header, command palette, live themes
 
 ---
@@ -46,7 +51,7 @@ LimeWire is an **18-tab all-in-one audio production studio** built with Python a
 ## Screenshots
 
 <details>
-<summary><strong>Click to expand all 18 tabs</strong></summary>
+<summary><strong>Click to expand all 19 tabs</strong></summary>
 
 | Tab | Screenshot |
 |-----|-----------|
@@ -68,6 +73,7 @@ LimeWire is an **18-tab all-in-one audio production studio** built with Python a
 | **Batch Process** | <img src="screenshots/16_batch.png" width="600"> |
 | **Scheduler** | <img src="screenshots/17_schedule.png" width="600"> |
 | **History** | <img src="screenshots/18_history.png" width="600"> |
+| **Cover Art** | <img src="screenshots/19_coverart.png" width="600"> |
 
 </details>
 
@@ -146,6 +152,7 @@ pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm m
 | **Converter** | Convert between audio formats with ffmpeg, preserves metadata |
 | **History** | Complete download log with search, replay, and management |
 | **Scheduler** | Schedule downloads for specific times, background polling |
+| **Cover Art** | View, add, fetch (iTunes/MusicBrainz), batch-apply album artwork |
 
 ### Playback & Analysis
 
@@ -298,7 +305,7 @@ LimeWire/
 ├── LimeWire.py                              # Main application
 ├── README.md                                # This file
 ├── LimeWire_v1.0_Operation_Manual.pdf       # 43-page operation manual
-└── screenshots/                             # App screenshots (18 tabs)
+└── screenshots/                             # App screenshots (19 tabs)
     ├── 01_search.png
     ├── 02_download.png
     ├── ...

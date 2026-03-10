@@ -1,10 +1,35 @@
 # Changelog
 
+## v1.1.0 — Quality of Life (2026-03-09)
+
+### New: Cover Art Manager (19th Tab)
+- Dedicated Cover Art page for viewing, adding, and managing album artwork
+- Browse and embed cover art from local images (JPG/PNG)
+- Auto-fetch cover art from iTunes Search API (no auth required)
+- Auto-fetch cover art from MusicBrainz Cover Art Archive (no auth required)
+- Batch apply cover art to entire album folders
+- Remove embedded art from files
+- Universal format support: MP3, FLAC, OGG, M4A, WAV
+- Auto-populate artist/album fields from file tags
+- Smart image processing: center-crop to square, resize to 500x500, JPEG optimization
+
+### Enhanced Features
+- **Effects chain undo/redo**: Full undo/redo stack (30 levels) for add, remove, edit, clear, and preset load operations
+- **Waveform frequency coloring**: Editor waveform bars colored by spectral centroid (cyan=low, green=mid, orange=high) with toggle checkbox
+- **Batch rename**: Pattern-based file renaming in History tab with tokens ({title}, {artist}, {bpm}, {key}, {date}, {n}, {ext}) and live preview
+- **Multi-format auto-tagging**: AnalyzePage now writes tags to MP3, FLAC, OGG, M4A (not just MP3); optional auto-tag after analysis
+- **Enhanced Player album art**: 200x200 display (up from 80x80), click to view full-size, universal format extraction (MP3/FLAC/OGG/M4A/WAV)
+
+### Tab Count
+- 19 tabs (added Cover Art)
+
+---
+
 ## v1.0.0 — Studio Edition (2026-03-09)
 
 First public release as **LimeWire 1.0 Studio Edition** — a complete all-in-one audio production studio.
 
-### 18 Tabs
+### 18 Tabs (v1.0)
 
 | Tab | Description |
 |-----|-------------|

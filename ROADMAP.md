@@ -16,14 +16,23 @@
 - [x] Now Playing toast notifications
 - [x] Export library analysis to CSV
 
-## v1.1 — Quality of Life
-- [ ] Improved keyboard navigation across all tabs
-- [ ] Undo/redo in Effects chain
-- [ ] Waveform color coding by frequency in Editor
-- [ ] Batch rename downloaded files
-- [ ] Auto-tag metadata from analysis results
+## v1.1 — Quality of Life — Shipped!
+- [x] Cover Art Manager (19th tab) — view, add, fetch, batch-apply album artwork
+- [x] Fetch cover art from iTunes Search API and MusicBrainz Cover Art Archive
+- [x] Universal cover art embedding (MP3/FLAC/OGG/M4A/WAV)
+- [x] Undo/redo in Effects chain (30-level stack)
+- [x] Waveform color coding by frequency in Editor (spectral centroid)
+- [x] Batch rename downloaded files with pattern tokens
+- [x] Auto-tag metadata from analysis results (multi-format)
+- [x] Enhanced Player album art (200x200, click-to-enlarge, all formats)
 
-## v1.2 — Streaming & Social
+## v1.2 — Keyboard & Navigation
+- [ ] Improved keyboard navigation across all tabs
+- [ ] Tab/Shift+Tab focus cycling, Enter to trigger primary action
+- [ ] Keyboard shortcut customization dialog
+- [ ] Audio waveform seeking via arrow keys in Player
+
+## v1.3 — Streaming & Social
 - [ ] SoundCloud and Bandcamp integration
 - [ ] Share analysis results (BPM, key, loudness) as image cards
 - [ ] Collaborative playlist building via shared JSON

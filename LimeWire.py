@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LimeWire v1.0.0 — Studio Edition
+LimeWire v1.1.0 — Studio Edition
 The modern music utility for everything. 18-tab audio production studio.
 Features: Download, Batch DL, Playlist, Convert, Player (crossfade/EQ),
           Stem Separation (Demucs), Audio Analysis (BPM/Key/LUFS),
@@ -988,6 +988,109 @@ def spotify_to_youtube(url):
     search_url=f"ytsearch1:{title}"
     return search_url,None
 
+# ── Cover Art Utilities ──────────────────────────────────────────────────────
+
+def extract_cover_art(filepath):
+    """Extract embedded cover art bytes from any audio format.
+    Returns (bytes, mime_str) or (None, None)."""
+    try:
+        audio=mutagen.File(filepath)
+        if audio is None: return None,None
+        # MP3 / WAV — ID3 APIC
+        if hasattr(audio,'tags') and audio.tags:
+            for k in audio.tags:
+                if str(k).startswith("APIC"):
+                    frame=audio.tags[k]
+                    return frame.data, getattr(frame,'mime','image/jpeg')
+        # FLAC pictures
+        if hasattr(audio,'pictures') and audio.pictures:
+            pic=audio.pictures[0]
+            return pic.data, pic.mime or 'image/jpeg'
+        # M4A — covr atom
+        if hasattr(audio,'tags') and audio.tags and 'covr' in audio.tags:
+            covr=audio.tags['covr']
+            if covr: return bytes(covr[0]), 'image/jpeg'
+        # OGG — metadata_block_picture
+        if hasattr(audio,'tags') and audio.tags and 'metadata_block_picture' in audio:
+            import base64
+            from mutagen.flac import Picture
+            raw=base64.b64decode(audio['metadata_block_picture'][0])
+            pic=Picture(raw)
+            return pic.data, pic.mime or 'image/jpeg'
+    except Exception: pass
+    return None,None
+
+def embed_cover_art(filepath, img_bytes, mime='image/jpeg'):
+    """Embed cover art into any supported audio file."""
+    audio=mutagen.File(filepath)
+    if audio is None: raise ValueError(f"Unsupported: {filepath}")
+    from mutagen.mp3 import MP3 as _MP3
+    from mutagen.flac import FLAC as _FLAC, Picture as _Picture
+    from mutagen.mp4 import MP4 as _MP4, MP4Cover as _MP4Cover
+    from mutagen.oggvorbis import OggVorbis as _OGG
+    from mutagen.wave import WAVE as _WAVE
+    import base64
+    if isinstance(audio,(_MP3,_WAVE)):
+        try: audio.add_tags()
+        except Exception: pass
+        audio.tags.delall("APIC")
+        audio.tags.add(APIC(encoding=3,mime=mime,type=3,desc="Cover",data=img_bytes))
+    elif isinstance(audio,_FLAC):
+        pic=_Picture(); pic.type=3; pic.mime=mime; pic.desc="Cover"; pic.data=img_bytes
+        audio.clear_pictures(); audio.add_picture(pic)
+    elif isinstance(audio,_OGG):
+        pic=_Picture(); pic.type=3; pic.mime=mime; pic.desc="Cover"; pic.data=img_bytes
+        try:
+            im=Image.open(BytesIO(img_bytes)); pic.width,pic.height=im.size; pic.depth=24
+        except Exception: pic.width=pic.height=500; pic.depth=24
+        encoded=base64.b64encode(pic.write()).decode('ascii')
+        audio['metadata_block_picture']=[encoded]
+    elif isinstance(audio,_MP4):
+        fmt=_MP4Cover.FORMAT_PNG if mime=='image/png' else _MP4Cover.FORMAT_JPEG
+        audio.tags['covr']=[_MP4Cover(img_bytes,imageformat=fmt)]
+    else:
+        raise ValueError(f"Unsupported tag type: {type(audio)}")
+    audio.save()
+
+def prepare_cover_image(img_bytes, size=500, quality=90):
+    """Center-crop to square, resize, return JPEG bytes."""
+    img=Image.open(BytesIO(img_bytes)).convert("RGB")
+    w,h=img.size; side=min(w,h)
+    left=(w-side)//2; top=(h-side)//2
+    img=img.crop((left,top,left+side,top+side))
+    img=img.resize((size,size),Image.LANCZOS)
+    buf=BytesIO(); img.save(buf,format="JPEG",quality=quality); return buf.getvalue()
+
+def fetch_itunes_art(query, size=600):
+    """Fetch album art from iTunes Search API (no auth). Returns bytes or None."""
+    try:
+        url="https://itunes.apple.com/search"
+        resp=requests.get(url,params={"term":query,"entity":"album","limit":5},timeout=10)
+        if resp.status_code!=200: return None
+        for r in resp.json().get("results",[]):
+            art_url=r.get("artworkUrl100","")
+            if art_url:
+                art_url=art_url.replace("100x100bb",f"{size}x{size}bb")
+                img_resp=requests.get(art_url,timeout=15)
+                if img_resp.status_code==200 and len(img_resp.content)>1000:
+                    return img_resp.content
+    except Exception: pass
+    return None
+
+def fetch_musicbrainz_art(query, size=500):
+    """Fetch cover art from MusicBrainz Cover Art Archive (no auth). Returns bytes or None."""
+    if not HAS_MUSICBRAINZ: return None
+    try:
+        results=musicbrainzngs.search_releases(query=query,limit=5)
+        for rel in results.get("release-list",[]):
+            mbid=rel["id"]
+            try:
+                data=musicbrainzngs.get_image_front(mbid,size=str(size))
+                if data and len(data)>1000: return data
+            except Exception: continue
+    except Exception: pass
+    return None
+
 def identify_acoustid(filepath):
     """Fingerprint and identify using AcoustID/Chromaprint."""
     if not HAS_ACOUSTID: return {"error": "pyacoustid not installed"}
@@ -1601,7 +1704,7 @@ class CommandPalette(tk.Toplevel):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LimeWire 1.0 Studio Edition"); self.minsize(760,700)
+        self.title("LimeWire 1.1 Studio Edition"); self.minsize(760,700)
         # Fit window to screen
         sw,sh=self.winfo_screenwidth(),self.winfo_screenheight()
         w,h=min(820,sw-40),min(960,sh-80)
@@ -1801,7 +1904,7 @@ class App(tk.Tk):
         if HAS_DEMUCS: caps.append("Demucs Stems")
         cap_str = ", ".join(caps) if caps else "None (install optional deps)"
         hm.add_command(label="About",command=lambda:messagebox.showinfo("About",
-            f"LimeWire v1.0 Studio Edition\n\n"
+            f"LimeWire v1.1 Studio Edition\n\n"
             f"The modern music utility for everything.\n"
             f"Powered by yt-dlp + Demucs + librosa + pydub\n\n"
             f"18 pages: Search, Batch DL, Playlist, Convert, Player,\n"
@@ -1843,7 +1946,7 @@ class App(tk.Tk):
             # Pill badge
             bx=220; by=LOGO_H//2
             _round_rect(bar,bx,by-10,bx+90,by+10,radius=10,fill="#3a6e4e",outline="",tags="fg")
-            bar.create_text(bx+45,by,text="v1.0 Studio",font=("Segoe UI",7,"bold"),fill="#FFFFFF",tags="fg")
+            bar.create_text(bx+45,by,text="v1.1 Studio",font=("Segoe UI",7,"bold"),fill="#FFFFFF",tags="fg")
             # Status indicator (right side)
             sx=w-100; sy=LOGO_H//2
             self._status_x=sx; self._status_y=sy
@@ -1877,7 +1980,8 @@ class App(tk.Tk):
                ("editor","\u2702","Editor"),("recorder","\U0001F3A4","Record"),
                ("spectrogram","\U0001F308","Spectro"),("pitchtime","\U0001F3B9","Pitch"),
                ("remixer","\U0001F3A7","Remix"),("batch","\u2699","Batch"),
-               ("schedule","\u23F0","Schedule"),("history","\U0001F4DC","History")]
+               ("schedule","\u23F0","Schedule"),("history","\U0001F4DC","History"),
+               ("coverart","\U0001F5BC","Cover")]
         for name,icon,label in items:
             bf=tk.Frame(tb,bg=TOOLBAR,cursor="hand2")
             bf.pack(side="left",padx=1,pady=(4,0))
@@ -1931,7 +2035,8 @@ class App(tk.Tk):
                                 ("editor","Editor",EditorPage),("recorder","Recorder",RecorderPage),
                                 ("spectrogram","Spectrogram",SpectrogramPage),("pitchtime","Pitch/Time",PitchTimePage),
                                 ("remixer","Remixer",RemixerPage),("batch","Batch Process",BatchProcessorPage),
-                                ("schedule","Schedule",SchedulerPage),("history","History",HistoryPage)]:
+                                ("schedule","Schedule",SchedulerPage),("history","History",HistoryPage),
+                                ("coverart","Cover Art",CoverArtPage)]:
             page=cls(self.nb,self); self.nb.add(page,text=f" {label} "); self.pages[name]=page
         self.nb.bind("<<NotebookTabChanged>>",self._on_tab)
 
@@ -2458,7 +2563,10 @@ class AnalyzePage(ScrollFrame):
         ClassicBtn(ibr,"Chromaprint/AcoustID",self._run_acoustid).pack(side="left",padx=(0,6))
         ClassicBtn(ibr,"MusicBrainz Lookup",self._run_mb).pack(side="left",padx=(0,6))
         OrangeBtn(ibr,"Apple Music Lookup",self._run_apple_music).pack(side="left",padx=(0,6))
-        ClassicBtn(ibr,"Write Tags to File",self._write_tags).pack(side="left")
+        ClassicBtn(ibr,"Write Tags to File",self._write_tags).pack(side="left",padx=(0,6))
+        self._auto_tag=tk.BooleanVar(value=False)
+        tk.Checkbutton(ibr,text="Auto-tag after analysis",variable=self._auto_tag,font=F_SMALL,
+                       bg=BG,fg=TEXT,selectcolor=INPUT_BG,activebackground=BG,activeforeground=TEXT).pack(side="left")
 
         self._id_res = {}
         for label in ["Identified Title","Identified Artist","Genre","Album","Shazam URL","Chromaprint","MusicBrainz","Apple Music"]:
@@ -2613,6 +2721,9 @@ class AnalyzePage(ScrollFrame):
             self.after(0,lambda:self._draw_waveform(bars))
         self.after(0,lambda:(self.status_lbl.config(text="Analysis complete",fg=LIME_DK),
                               self.app.set_status("Analysis complete")))
+        # Auto-tag if enabled
+        if hasattr(self,"_auto_tag") and self._auto_tag.get():
+            self.after(200,self._write_tags)
 
     def _draw_waveform(self,bars):
         if not bars: return
@@ -2720,24 +2831,48 @@ class AnalyzePage(ScrollFrame):
 
     def _write_tags(self):
         path=self.file_var.get()
-        if not path or not os.path.exists(path) or not path.lower().endswith(".mp3"):
-            messagebox.showinfo("LimeWire","Select an MP3 file first."); return
+        if not path or not os.path.exists(path):
+            messagebox.showinfo("LimeWire","Select an audio file first."); return
         title=self._id_res["Identified Title"].cget("text")
         artist=self._id_res["Identified Artist"].cget("text")
         bpm_str=self._res["BPM"].cget("text")
         key_str=self._res["Key"].cget("text")
+        genre=self._id_res["Genre"].cget("text") if "Genre" in self._id_res else ""
         try:
-            audio=ID3(path)
-            if title and title!="--": audio["TIT2"]=TIT2(encoding=3,text=title)
-            if artist and artist!="--": audio["TPE1"]=TPE1(encoding=3,text=artist)
-            if bpm_str and bpm_str!="--":
-                try: audio["TBPM"]=TBPM(encoding=3,text=str(int(float(bpm_str))))
+            audio=mutagen.File(path)
+            if audio is None: self.status_lbl.config(text="Unsupported format",fg=RED); return
+            from mutagen.mp3 import MP3 as _MP3; from mutagen.flac import FLAC as _FLAC
+            from mutagen.mp4 import MP4 as _MP4; from mutagen.wave import WAVE as _WAVE
+            ext=os.path.splitext(path)[1].lower()
+            if isinstance(audio,(_MP3,_WAVE)):
+                # ID3 tags
+                try: audio.add_tags()
                 except Exception: pass
-            if key_str and key_str!="--": audio["TKEY"]=TKEY(encoding=3,text=key_str)
-            genre=self._id_res["Genre"].cget("text")
-            if genre and genre!="--": audio["TCON"]=TCON(encoding=3,text=genre)
+                tags=audio.tags or audio
+                if title and title!="--": tags["TIT2"]=TIT2(encoding=3,text=title)
+                if artist and artist!="--": tags["TPE1"]=TPE1(encoding=3,text=artist)
+                if bpm_str and bpm_str!="--":
+                    try: tags["TBPM"]=TBPM(encoding=3,text=str(int(float(bpm_str))))
+                    except Exception: pass
+                if key_str and key_str!="--": tags["TKEY"]=TKEY(encoding=3,text=key_str)
+                if genre and genre!="--": tags["TCON"]=TCON(encoding=3,text=genre)
+            elif isinstance(audio,(_FLAC,)) or ext in (".ogg",".opus"):
+                # Vorbis comments
+                if title and title!="--": audio["TITLE"]=[title]
+                if artist and artist!="--": audio["ARTIST"]=[artist]
+                if bpm_str and bpm_str!="--": audio["BPM"]=[str(int(float(bpm_str)))]
+                if key_str and key_str!="--": audio["KEY"]=[key_str]
+                if genre and genre!="--": audio["GENRE"]=[genre]
+            elif isinstance(audio,_MP4):
+                # MP4 atoms
+                if title and title!="--": audio.tags["\u00a9nam"]=[title]
+                if artist and artist!="--": audio.tags["\u00a9ART"]=[artist]
+                if bpm_str and bpm_str!="--":
+                    try: audio.tags["tmpo"]=[int(float(bpm_str))]
+                    except Exception: pass
+                if genre and genre!="--": audio.tags["\u00a9gen"]=[genre]
             audio.save()
-            self.status_lbl.config(text="Tags written to MP3",fg=LIME_DK)
+            self.status_lbl.config(text=f"Tags written to {ext.upper().lstrip('.')} file",fg=LIME_DK)
         except Exception as e:
             self.status_lbl.config(text=f"Tag error: {str(e)[:60]}",fg=RED)
 
@@ -3363,9 +3498,11 @@ class PlayerPage(ScrollFrame):
     def _build(self,p):
         ng=GroupBox(p,"Now Playing"); ng.pack(fill="x",padx=10,pady=(10,6))
         nr=tk.Frame(ng,bg=BG); nr.pack(fill="x")
-        self.art=tk.Label(nr,bg=BG,width=10,height=5,text="\u266A",font=F_TITLE,fg=TEXT_DIM,
-                          relief="flat",bd=0,highlightthickness=1,highlightbackground=CARD_BORDER)
+        self.art=tk.Label(nr,bg=CARD_BG,width=200,height=200,text="\u266A",font=("Segoe UI",32),fg=TEXT_DIM,
+                          relief="groove",bd=1,cursor="hand2")
         self.art.pack(side="left",padx=(0,12))
+        self.art.bind("<Button-1>",self._show_fullsize_art)
+        self._art_data=None
         ni=tk.Frame(nr,bg=BG); ni.pack(side="left",fill="both",expand=True)
         self.np_t=tk.Label(ni,text="No track loaded",font=F_HEADER,bg=BG,fg=TEXT,anchor="w"); self.np_t.pack(fill="x")
         self.np_a=tk.Label(ni,text="",font=F_BODY,bg=BG,fg=TEXT_DIM,anchor="w"); self.np_a.pack(fill="x",pady=(2,0))
@@ -3466,7 +3603,7 @@ class PlayerPage(ScrollFrame):
         self._cur=idx; path=self._playlist[idx]
         self.plb.selection_clear(0,"end"); self.plb.selection_set(idx); self.plb.see(idx)
         name=os.path.splitext(os.path.basename(path))[0]; self.np_t.config(text=name); self.np_a.config(text="")
-        self.art.config(image="",text="♪",width=10,height=5)
+        self.art.config(image="",text="\u266A",width=200,height=200); self._art_data=None
         try:
             mf=mutagen.File(path)
             if mf and mf.info: self._dur=mf.info.length
@@ -3474,22 +3611,20 @@ class PlayerPage(ScrollFrame):
             # Extract artist from any format
             artist=""
             if hasattr(mf,'tags') and mf.tags:
-                for key in ["TPE1","artist","ARTIST","Author","©ART"]:
+                for key in ["TPE1","artist","ARTIST","Author","\u00a9ART"]:
                     if key in mf.tags:
                         val=mf.tags[key]
                         artist=str(val[0]) if isinstance(val,list) else str(val)
                         break
             if artist: self.np_a.config(text=artist)
             self.dur_l.config(text=fmt_duration(self._dur)); self.seek.config(to=self._dur)
-            # Album art — try ID3 APIC first, then FLAC/OGG pictures
-            art_data=None
-            if hasattr(mf,'tags') and mf.tags:
-                if "APIC:" in mf.tags: art_data=mf.tags["APIC:"].data
-                elif hasattr(mf,'pictures') and mf.pictures: art_data=mf.pictures[0].data
+            # Album art — use universal extractor (MP3/FLAC/OGG/M4A/WAV)
+            art_data,_=extract_cover_art(path)
             if art_data:
+                self._art_data=art_data
                 with Image.open(BytesIO(art_data)) as raw:
-                    img=raw.convert("RGB"); img.thumbnail((80,80),Image.LANCZOS)
-                ph=ImageTk.PhotoImage(img); self.art.config(image=ph,text="",width=80,height=80); self.art._img=ph
+                    img=raw.convert("RGB"); img.thumbnail((200,200),Image.LANCZOS)
+                ph=ImageTk.PhotoImage(img); self.art.config(image=ph,text="",width=200,height=200); self.art._img=ph
         except Exception: self._dur=0
         # Generate waveform in background
         threading.Thread(target=self._gen_wave,args=(path,),daemon=True).start()
@@ -3505,6 +3640,19 @@ class PlayerPage(ScrollFrame):
             self._upnext_lbl.config(text=f"Up Next: {nxt_name}")
         else:
             self._upnext_lbl.config(text="")
+    def _show_fullsize_art(self,e=None):
+        if not self._art_data: return
+        dlg=tk.Toplevel(self); dlg.title("Album Art"); dlg.configure(bg=BG)
+        try:
+            img=Image.open(BytesIO(self._art_data)).convert("RGB")
+            w,h=img.size; scale=min(600/w,600/h,1.0)
+            img=img.resize((int(w*scale),int(h*scale)),Image.LANCZOS)
+            ph=ImageTk.PhotoImage(img)
+            lbl=tk.Label(dlg,image=ph,bg=BG); lbl._img=ph; lbl.pack(padx=8,pady=8)
+            dlg.geometry(f"{int(w*scale)+16}x{int(h*scale)+16}")
+        except Exception:
+            tk.Label(dlg,text="Cannot display image",font=F_BODY,bg=BG,fg=RED).pack(padx=20,pady=20)
+        dlg.bind("<Escape>",lambda e:dlg.destroy())
     def _gen_wave(self,path):
         bars=generate_waveform_data(path,PLAYER_WAVEFORM_W,PLAYER_WAVEFORM_H-5)
         if bars:
@@ -3716,6 +3864,7 @@ class HistoryPage(ScrollFrame):
         tk.Label(hdr,text="Download History",font=F_TITLE,bg=BG,fg=TEXT).pack(side="left")
         ClassicBtn(hdr,"Open File",self._open_file).pack(side="right",padx=(4,0))
         ClassicBtn(hdr,"Redownload",self._redown_sel).pack(side="right",padx=(4,0))
+        ClassicBtn(hdr,"Batch Rename",self._batch_rename).pack(side="right",padx=(4,0))
         ClassicBtn(hdr,"Clear",self._clear).pack(side="right")
         # Search/filter bar
         sf=tk.Frame(p,bg=BG,padx=10); sf.pack(fill="x",pady=(4,0))
@@ -3767,6 +3916,85 @@ class HistoryPage(ScrollFrame):
             open_folder(os.path.dirname(fp))
         elif entry.get("folder"):
             open_folder(entry["folder"])
+    def _batch_rename(self):
+        """Batch rename downloaded files using a pattern template."""
+        # Collect files that exist
+        files=[]
+        for entry in self.app.history:
+            fp=entry.get("filepath","")
+            if fp and os.path.exists(fp): files.append((entry,fp))
+        if not files:
+            show_toast(self.app,"No existing files in history","warning"); return
+        dlg=tk.Toplevel(self); dlg.title("Batch Rename"); dlg.geometry("550x420")
+        dlg.configure(bg=BG); dlg.transient(self); dlg.grab_set()
+        tk.Label(dlg,text="Rename Pattern",font=F_HEADER,bg=BG,fg=TEXT).pack(pady=(10,4))
+        tk.Label(dlg,text="Tokens: {title} {artist} {bpm} {key} {date} {n} {ext}",
+                 font=F_SMALL,bg=BG,fg=TEXT_DIM).pack()
+        pat_var=tk.StringVar(value="{title} - {artist}.{ext}")
+        ClassicEntry(dlg,pat_var,width=50).pack(padx=20,pady=6,ipady=2)
+        tk.Label(dlg,text="Preview (first 8 files):",font=F_BOLD,bg=BG,fg=TEXT).pack(anchor="w",padx=20)
+        preview_lb=tk.Listbox(dlg,font=F_MONO,bg=INPUT_BG,fg=TEXT,height=8,relief="flat",bd=1)
+        preview_lb.pack(fill="both",expand=True,padx=20,pady=4)
+        def _preview(*_):
+            preview_lb.delete(0,"end")
+            pat=pat_var.get()
+            for i,(entry,fp) in enumerate(files[:8]):
+                ext=os.path.splitext(fp)[1].lstrip(".")
+                title=entry.get("title","Unknown")[:40]
+                artist=""
+                try:
+                    mf=mutagen.File(fp)
+                    if mf and hasattr(mf,'tags') and mf.tags:
+                        for k in ["TPE1","artist","ARTIST","\u00a9ART"]:
+                            if k in mf.tags:
+                                v=mf.tags[k]; artist=str(v[0]) if isinstance(v,list) else str(v); break
+                except Exception: pass
+                # Check analysis cache for BPM/key
+                bpm=""; key=""
+                cache=load_json(ANALYSIS_CACHE_FILE,{})
+                ckey=f"{fp}|{os.path.getmtime(fp):.0f}" if os.path.exists(fp) else ""
+                if ckey in cache:
+                    bpm=str(int(cache[ckey].get("bpm",0))) if cache[ckey].get("bpm") else ""
+                    key=cache[ckey].get("key","")
+                date=entry.get("date","")[:10]
+                new_name=pat.replace("{title}",title).replace("{artist}",artist or "Unknown")
+                new_name=new_name.replace("{bpm}",bpm or "0").replace("{key}",key or "?")
+                new_name=new_name.replace("{date}",date).replace("{n}",str(i+1)).replace("{ext}",ext)
+                # Sanitize
+                new_name=re.sub(r'[/<>:"|?*]','_',new_name)
+                old=os.path.basename(fp)
+                preview_lb.insert("end",f"{old[:25]:25s} \u2192 {new_name}")
+        pat_var.trace_add("write",_preview); _preview()
+        def _apply():
+            renamed=0
+            for i,(entry,fp) in enumerate(files):
+                ext=os.path.splitext(fp)[1].lstrip(".")
+                title=entry.get("title","Unknown")[:40]; artist=""; bpm=""; key=""
+                try:
+                    mf=mutagen.File(fp)
+                    if mf and hasattr(mf,'tags') and mf.tags:
+                        for k in ["TPE1","artist","ARTIST","\u00a9ART"]:
+                            if k in mf.tags:
+                                v=mf.tags[k]; artist=str(v[0]) if isinstance(v,list) else str(v); break
+                except Exception: pass
+                cache=load_json(ANALYSIS_CACHE_FILE,{})
+                ckey=f"{fp}|{os.path.getmtime(fp):.0f}" if os.path.exists(fp) else ""
+                if ckey in cache:
+                    bpm=str(int(cache[ckey].get("bpm",0))) if cache[ckey].get("bpm") else ""
+                    key=cache[ckey].get("key","")
+                date=entry.get("date","")[:10]; pat=pat_var.get()
+                new_name=pat.replace("{title}",title).replace("{artist}",artist or "Unknown")
+                new_name=new_name.replace("{bpm}",bpm or "0").replace("{key}",key or "?")
+                new_name=new_name.replace("{date}",date).replace("{n}",str(i+1)).replace("{ext}",ext)
+                new_name=re.sub(r'[/<>:"|?*]','_',new_name)
+                new_path=os.path.join(os.path.dirname(fp),new_name)
+                if new_path!=fp and not os.path.exists(new_path):
+                    try: os.rename(fp,new_path); entry["filepath"]=new_path; renamed+=1
+                    except Exception: pass
+            save_json(HISTORY_FILE,self.app.history)
+            dlg.destroy(); self.refresh()
+            show_toast(self.app,f"Renamed {renamed}/{len(files)} files","success")
+        LimeBtn(dlg,"Rename All",_apply).pack(pady=8)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3776,7 +4004,8 @@ class HistoryPage(ScrollFrame):
 class EffectsPage(ScrollFrame):
     """Pedalboard effects chain processor for audio files."""
     def __init__(self,parent,app):
-        super().__init__(parent); self.app=app; self._chain=[]; self._build(self.inner)
+        super().__init__(parent); self.app=app; self._chain=[]; self._undo_stack=[]; self._redo_stack=[]
+        self._build(self.inner)
     def _build(self,p):
         fg=GroupBox(p,"Source Audio File"); fg.pack(fill="x",padx=10,pady=(10,6))
         fr=tk.Frame(fg,bg=BG); fr.pack(fill="x")
@@ -3800,6 +4029,8 @@ class EffectsPage(ScrollFrame):
         OrangeBtn(ar,"Clear All",self._clear_fx).pack(side="left",padx=(0,6))
         ClassicBtn(ar,"Save Preset",self._save_preset).pack(side="left",padx=(0,6))
         ClassicBtn(ar,"Load Preset",self._load_preset).pack(side="left",padx=(0,6))
+        ClassicBtn(ar,"\u21a9 Undo",self._undo).pack(side="left",padx=(0,6))
+        ClassicBtn(ar,"\u21aa Redo",self._redo).pack(side="left",padx=(0,6))
 
         # Chain display
         self.chain_frame=tk.Frame(eg,bg=BG); self.chain_frame.pack(fill="x")
@@ -3824,7 +4055,26 @@ class EffectsPage(ScrollFrame):
         f=filedialog.askopenfilename(filetypes=[("Audio","*.mp3 *.wav *.flac *.ogg *.m4a"),("All","*.*")])
         if f: self.file_var.set(f)
 
+    def _push_undo(self):
+        import copy
+        self._undo_stack.append(copy.deepcopy(self._chain))
+        if len(self._undo_stack)>30: self._undo_stack.pop(0)
+        self._redo_stack.clear()
+    def _undo(self):
+        if not self._undo_stack: show_toast(self.app,"Nothing to undo","info"); return
+        import copy
+        self._redo_stack.append(copy.deepcopy(self._chain))
+        self._chain=self._undo_stack.pop()
+        self._render_chain(); show_toast(self.app,"Undone","info")
+    def _redo(self):
+        if not self._redo_stack: show_toast(self.app,"Nothing to redo","info"); return
+        import copy
+        self._undo_stack.append(copy.deepcopy(self._chain))
+        self._chain=self._redo_stack.pop()
+        self._render_chain(); show_toast(self.app,"Redone","info")
+
     def _add_fx(self):
+        self._push_undo()
         name=self._fx_var.get()
         self._chain.append({"name":name,"params":self._default_params(name)})
         self._render_chain()
@@ -3864,7 +4114,7 @@ class EffectsPage(ScrollFrame):
             ClassicBtn(r,"X",lambda i=i:self._remove_fx(i)).pack(side="right",padx=2)
 
     def _remove_fx(self,idx):
-        if idx<len(self._chain): self._chain.pop(idx); self._render_chain()
+        if idx<len(self._chain): self._push_undo(); self._chain.pop(idx); self._render_chain()
 
     def _edit_fx(self,idx):
         if idx>=len(self._chain): return
@@ -3880,6 +4130,7 @@ class EffectsPage(ScrollFrame):
             sv=tk.StringVar(value=str(v)); vars_[k]=sv
             ClassicEntry(r,sv,width=10).pack(side="left",ipady=1)
         def _save():
+            self._push_undo()
             for k,sv in vars_.items():
                 try: fx["params"][k]=float(sv.get())
                 except Exception: pass
@@ -3887,7 +4138,7 @@ class EffectsPage(ScrollFrame):
         LimeBtn(dlg,"Save",_save).pack(pady=10)
 
     def _clear_fx(self):
-        self._chain=[]; self._render_chain()
+        self._push_undo(); self._chain=[]; self._render_chain()
 
     def _save_preset(self):
         if not self._chain:
@@ -3908,7 +4159,7 @@ class EffectsPage(ScrollFrame):
             data=load_json(f)
             chain=data.get("chain",[]) if isinstance(data,dict) else data
             if not isinstance(chain,list): show_toast(self.app,"Invalid preset file","error"); return
-            self._chain=chain; self._render_chain()
+            self._push_undo(); self._chain=chain; self._render_chain()
             show_toast(self.app,f"Loaded {len(chain)} effects from preset","success")
         except Exception as e:
             show_toast(self.app,f"Load failed: {e}","error")
@@ -4441,6 +4692,11 @@ class EditorPage(ScrollFrame):
         ClassicBtn(zf,"Fit All",self._zoom_reset).pack(side="left",padx=(0,8))
         self._zoom_lbl=tk.Label(zf,text="1.0x",font=F_SMALL,bg=BG,fg=TEXT_DIM)
         self._zoom_lbl.pack(side="left",padx=(0,8))
+        self._color_freq=tk.BooleanVar(value=False)
+        tk.Checkbutton(zf,text="Color by frequency",variable=self._color_freq,font=F_SMALL,
+                       bg=BG,fg=TEXT,selectcolor=INPUT_BG,activebackground=BG,activeforeground=TEXT,
+                       command=self._draw_waveform).pack(side="left",padx=(0,8))
+        self._freq_colors=[]
         self._hscroll=tk.Scrollbar(wg,orient="horizontal",command=self._on_scrollbar)
         self._hscroll.pack(fill="x",padx=4)
         # Minimap — full waveform overview with viewport indicator
@@ -4552,12 +4808,21 @@ class EditorPage(ScrollFrame):
         end_idx=max(start_idx+1,min(end_idx,len(all_bars)))
         visible_bars=all_bars[start_idx:end_idx]
         self._bars=all_bars; self._view_start=start_idx; self._view_end=end_idx
+        # Compute frequency colors if enabled
+        use_freq=self._color_freq.get() if hasattr(self,"_color_freq") else False
+        if use_freq and len(self._freq_colors)!=len(all_bars):
+            self._freq_colors=self._compute_freq_colors(self._segment,len(all_bars))
         # Draw bars scaled to canvas width
         mid=h//2
         n=len(visible_bars)
         for i,bh in enumerate(visible_bars):
             x=int(i*w/n) if n>0 else i
-            cv.create_line(x,mid-bh//2,x,mid+bh//2,fill=LIME)
+            if use_freq and self._freq_colors:
+                ci=start_idx+i
+                clr=self._freq_colors[ci] if ci<len(self._freq_colors) else LIME
+            else:
+                clr=LIME
+            cv.create_line(x,mid-bh//2,x,mid+bh//2,fill=clr)
         # Draw selection overlay (mapped to visible range)
         if self._segment and self._sel_start_ms<self._sel_end_ms and dur_ms>0:
             # Map ms to bar index
@@ -4576,6 +4841,33 @@ class EditorPage(ScrollFrame):
         self._zoom_lbl.config(text=f"{self._zoom:.1f}x")
         # Update minimap
         self._draw_minimap(all_bars,start_idx,end_idx)
+
+    def _compute_freq_colors(self,segment,num_bars):
+        """Compute per-bar color based on spectral centroid (low=cyan, mid=green, high=orange)."""
+        if not _ensure_librosa(): return [LIME]*num_bars
+        try:
+            import numpy as _np
+            samples=_np.array(segment.get_array_of_samples(),dtype=_np.float32)
+            if segment.channels>1: samples=samples[::segment.channels]
+            sr=segment.frame_rate
+            # Compute spectral centroid
+            S=librosa.feature.spectral_centroid(y=samples,sr=sr,hop_length=max(1,len(samples)//num_bars))
+            centroids=S[0]
+            # Normalize to 0-1 range
+            mn,mx=centroids.min(),centroids.max()
+            if mx-mn<1: return [LIME]*num_bars
+            norm=(centroids-mn)/(mx-mn)
+            # Map to colors: 0=cyan(low), 0.5=lime(mid), 1.0=orange(high)
+            colors=[]
+            for v in norm:
+                if v<0.33: colors.append(_lerp_color("#00CED1",LIME,v/0.33))
+                elif v<0.66: colors.append(_lerp_color(LIME,YELLOW,(v-0.33)/0.33))
+                else: colors.append(_lerp_color(YELLOW,ORANGE,(v-0.66)/0.34))
+            # Pad/trim to match num_bars
+            while len(colors)<num_bars: colors.append(LIME)
+            return colors[:num_bars]
+        except Exception:
+            return [LIME]*num_bars
 
     def _px_to_ms(self,x):
         """Convert canvas pixel x to milliseconds, accounting for zoom/scroll."""
@@ -5720,6 +6012,245 @@ class BatchProcessorPage(ScrollFrame):
                 self.prog.configure(value=100),
                 self.app.toast(f"Batch: {done}/{total} files processed")))
         threading.Thread(target=_do,daemon=True).start()
+
+
+# ── Cover Art Page ────────────────────────────────────────────────────────────
+
+class CoverArtPage(ScrollFrame):
+    """Manage album cover art — view, add, fetch, and batch-apply to audio files."""
+    AUDIO_EXTS=(".mp3",".wav",".flac",".ogg",".m4a",".aac",".opus",".wma")
+    def __init__(self,parent,app):
+        super().__init__(parent); self.app=app; self._files=[]; self._new_art=None; self._new_mime=None
+        self._build(self.inner)
+    def _build(self,p):
+        # ── Source Files ──
+        fg=GroupBox(p,"Source Files"); fg.pack(fill="x",padx=10,pady=(10,6))
+        fr=tk.Frame(fg,bg=BG); fr.pack(fill="x")
+        self.file_var=tk.StringVar()
+        ClassicEntry(fr,self.file_var,width=50).pack(side="left",fill="x",expand=True,ipady=2,padx=(0,8))
+        ClassicBtn(fr,"Browse File",self._browse_file).pack(side="left",padx=(0,4))
+        ClassicBtn(fr,"Add Folder",self._add_folder).pack(side="left",padx=(0,4))
+        ClassicBtn(fr,"Clear",self._clear_files).pack(side="left")
+        self.file_lb=tk.Listbox(fg,font=F_MONO,bg=INPUT_BG,fg=TEXT,selectbackground=LIME_DK,
+                                selectforeground=WHITE,height=6,relief="flat",bd=1,highlightthickness=1,
+                                highlightcolor=BORDER_L,highlightbackground=BORDER_D)
+        self.file_lb.pack(fill="x",pady=(6,0))
+        self.file_lb.bind("<<ListboxSelect>>",self._on_select)
+        # ── Current Cover Art ──
+        row=tk.Frame(p,bg=BG); row.pack(fill="x",padx=10,pady=(0,6))
+        cg=GroupBox(row,"Current Cover Art"); cg.pack(side="left",fill="both",expand=True,padx=(0,6))
+        self.cur_art=tk.Label(cg,text="No file\nselected",font=F_BODY,bg=CARD_BG,fg=TEXT_DIM,
+                              width=26,height=12,relief="groove",bd=1)
+        self.cur_art.pack(pady=4)
+        self.cur_info=tk.Label(cg,text="",font=F_SMALL,bg=BG,fg=TEXT_DIM,anchor="w")
+        self.cur_info.pack(fill="x")
+        # ── New Cover Art ──
+        ng=GroupBox(row,"New Cover Art"); ng.pack(side="left",fill="both",expand=True)
+        self.new_art=tk.Label(ng,text="No image\nselected",font=F_BODY,bg=CARD_BG,fg=TEXT_DIM,
+                              width=26,height=12,relief="groove",bd=1)
+        self.new_art.pack(pady=4)
+        nbr=tk.Frame(ng,bg=BG); nbr.pack(fill="x",pady=(2,0))
+        ClassicBtn(nbr,"Browse Image",self._browse_image).pack(side="left",padx=(0,4))
+        LimeBtn(nbr,"Fetch from iTunes",self._fetch_itunes).pack(side="left",padx=(0,4))
+        ClassicBtn(nbr,"Fetch from MusicBrainz",self._fetch_mb).pack(side="left")
+        # ── Search fields ──
+        sf=tk.Frame(ng,bg=BG); sf.pack(fill="x",pady=(6,0))
+        tk.Label(sf,text="Artist:",font=F_BOLD,bg=BG,fg=TEXT).pack(side="left")
+        self.artist_var=tk.StringVar()
+        ClassicEntry(sf,self.artist_var,width=18).pack(side="left",padx=(4,8),ipady=2)
+        tk.Label(sf,text="Album/Title:",font=F_BOLD,bg=BG,fg=TEXT).pack(side="left")
+        self.album_var=tk.StringVar()
+        ClassicEntry(sf,self.album_var,width=18).pack(side="left",padx=(4,0),ipady=2)
+        self.new_info=tk.Label(ng,text="",font=F_SMALL,bg=BG,fg=TEXT_DIM,anchor="w")
+        self.new_info.pack(fill="x",pady=(2,0))
+        # ── Apply ──
+        ag=GroupBox(p,"Apply"); ag.pack(fill="x",padx=10,pady=(0,6))
+        abr=tk.Frame(ag,bg=BG); abr.pack(fill="x")
+        LimeBtn(abr,"Apply to Selected",self._apply_selected,width=18).pack(side="left",padx=(0,8))
+        LimeBtn(abr,"Apply to All Files",self._apply_all,width=18).pack(side="left",padx=(0,8))
+        OrangeBtn(abr,"Remove Art",self._remove_art).pack(side="left",padx=(0,8))
+        self.status_lbl=tk.Label(ag,text="Select files and cover art above",font=F_SMALL,bg=BG,fg=TEXT_DIM,anchor="w")
+        self.status_lbl.pack(fill="x",pady=(4,0))
+        self.prog=ClassicProgress(ag); self.prog.pack(fill="x",pady=(4,0))
+
+    # ── File management ──
+    def _browse_file(self):
+        f=filedialog.askopenfilename(filetypes=[("Audio","*.mp3 *.wav *.flac *.ogg *.m4a *.aac *.opus"),("All","*.*")])
+        if f:
+            self.file_var.set(f)
+            if f not in self._files: self._files.append(f)
+            self._refresh_list(); self._select_file(len(self._files)-1)
+    def _add_folder(self):
+        d=filedialog.askdirectory()
+        if not d: return
+        added=0
+        for fn in sorted(os.listdir(d)):
+            fp=os.path.join(d,fn)
+            if os.path.isfile(fp) and os.path.splitext(fn)[1].lower() in self.AUDIO_EXTS:
+                if fp not in self._files: self._files.append(fp); added+=1
+        self._refresh_list()
+        show_toast(self.app,f"Added {added} audio files","info")
+    def _clear_files(self):
+        self._files.clear(); self.file_lb.delete(0,"end")
+        self.cur_art.config(image="",text="No file\nselected"); self.cur_info.config(text="")
+    def _refresh_list(self):
+        self.file_lb.delete(0,"end")
+        for fp in self._files:
+            art_data,_=extract_cover_art(fp)
+            icon="\u2713" if art_data else "\u2717"
+            self.file_lb.insert("end",f" {icon}  {os.path.basename(fp)}")
+    def _select_file(self,idx):
+        self.file_lb.selection_clear(0,"end"); self.file_lb.selection_set(idx); self.file_lb.see(idx)
+        self._show_current_art(self._files[idx])
+    def _on_select(self,e=None):
+        sel=self.file_lb.curselection()
+        if not sel: return
+        idx=sel[0]
+        if idx<len(self._files):
+            fp=self._files[idx]; self.file_var.set(fp); self._show_current_art(fp)
+            # Auto-populate artist/album from tags
+            try:
+                mf=mutagen.File(fp)
+                if mf and hasattr(mf,'tags') and mf.tags:
+                    for k in ["TPE1","artist","ARTIST","\u00a9ART"]:
+                        if k in mf.tags:
+                            v=mf.tags[k]; self.artist_var.set(str(v[0]) if isinstance(v,list) else str(v)); break
+                    for k in ["TALB","album","ALBUM","\u00a9alb"]:
+                        if k in mf.tags:
+                            v=mf.tags[k]; self.album_var.set(str(v[0]) if isinstance(v,list) else str(v)); break
+                    for k in ["TIT2","title","TITLE","\u00a9nam"]:
+                        if k in mf.tags:
+                            v=mf.tags[k]
+                            if not self.album_var.get(): self.album_var.set(str(v[0]) if isinstance(v,list) else str(v))
+                            break
+            except Exception: pass
+
+    # ── Display helpers ──
+    def _show_current_art(self,filepath):
+        art_data,mime=extract_cover_art(filepath)
+        if art_data:
+            self._display_art(self.cur_art,art_data)
+            try:
+                img=Image.open(BytesIO(art_data))
+                self.cur_info.config(text=f"{img.size[0]}x{img.size[1]}  {mime or '?'}  {len(art_data)//1024}KB")
+            except Exception: self.cur_info.config(text=f"{len(art_data)//1024}KB")
+        else:
+            self.cur_art.config(image="",text="No cover art\nembedded"); self.cur_info.config(text="")
+    def _display_art(self,label,img_bytes,size=200):
+        try:
+            img=Image.open(BytesIO(img_bytes)).convert("RGB")
+            img.thumbnail((size,size),Image.LANCZOS)
+            ph=ImageTk.PhotoImage(img); label.config(image=ph,text="",width=size,height=size); label._img=ph
+        except Exception:
+            label.config(image="",text="Error loading\nimage")
+    def _show_new_art(self,img_bytes,mime):
+        self._new_art=img_bytes; self._new_mime=mime
+        self._display_art(self.new_art,img_bytes)
+        try:
+            img=Image.open(BytesIO(img_bytes))
+            self.new_info.config(text=f"{img.size[0]}x{img.size[1]}  {mime}  {len(img_bytes)//1024}KB")
+        except Exception: self.new_info.config(text=f"{len(img_bytes)//1024}KB")
+
+    # ── Image source actions ──
+    def _browse_image(self):
+        f=filedialog.askopenfilename(filetypes=[("Images","*.jpg *.jpeg *.png *.bmp *.webp"),("All","*.*")])
+        if not f: return
+        with open(f,"rb") as fh: data=fh.read()
+        mime="image/png" if f.lower().endswith(".png") else "image/jpeg"
+        prepared=prepare_cover_image(data,size=500)
+        self._show_new_art(prepared,"image/jpeg")
+        show_toast(self.app,f"Loaded: {os.path.basename(f)}","info")
+    def _fetch_itunes(self):
+        query=f"{self.artist_var.get()} {self.album_var.get()}".strip()
+        if not query:
+            # Try filename
+            sel=self.file_lb.curselection()
+            if sel and sel[0]<len(self._files):
+                query=os.path.splitext(os.path.basename(self._files[sel[0]]))[0]
+        if not query: show_toast(self.app,"Enter artist/album or select a file","warning"); return
+        self.status_lbl.config(text=f"Searching iTunes for '{query[:40]}'...",fg=YELLOW)
+        def _do():
+            data=fetch_itunes_art(query,size=600)
+            if data:
+                prepared=prepare_cover_image(data,size=500)
+                self.after(0,lambda:(self._show_new_art(prepared,"image/jpeg"),
+                    self.status_lbl.config(text="iTunes cover art found!",fg=LIME_DK)))
+            else:
+                self.after(0,lambda:self.status_lbl.config(text="No cover art found on iTunes",fg=RED))
+        threading.Thread(target=_do,daemon=True).start()
+    def _fetch_mb(self):
+        query=f"{self.artist_var.get()} {self.album_var.get()}".strip()
+        if not query:
+            sel=self.file_lb.curselection()
+            if sel and sel[0]<len(self._files):
+                query=os.path.splitext(os.path.basename(self._files[sel[0]]))[0]
+        if not query: show_toast(self.app,"Enter artist/album or select a file","warning"); return
+        self.status_lbl.config(text=f"Searching MusicBrainz for '{query[:40]}'...",fg=YELLOW)
+        def _do():
+            data=fetch_musicbrainz_art(query,size=500)
+            if data:
+                prepared=prepare_cover_image(data,size=500)
+                self.after(0,lambda:(self._show_new_art(prepared,"image/jpeg"),
+                    self.status_lbl.config(text="MusicBrainz cover art found!",fg=LIME_DK)))
+            else:
+                self.after(0,lambda:self.status_lbl.config(text="No cover art found on MusicBrainz",fg=RED))
+        threading.Thread(target=_do,daemon=True).start()
+
+    # ── Apply / Remove ──
+    def _apply_selected(self):
+        if not self._new_art: show_toast(self.app,"Select or fetch cover art first","warning"); return
+        sel=self.file_lb.curselection()
+        if not sel: show_toast(self.app,"Select a file from the list","warning"); return
+        idx=sel[0]
+        if idx>=len(self._files): return
+        fp=self._files[idx]
+        try:
+            embed_cover_art(fp,self._new_art,self._new_mime or "image/jpeg")
+            show_toast(self.app,f"Cover art applied to {os.path.basename(fp)}","success")
+            self._refresh_list(); self._select_file(idx); self._show_current_art(fp)
+        except Exception as e:
+            show_toast(self.app,f"Error: {str(e)[:60]}","error")
+    def _apply_all(self):
+        if not self._new_art: show_toast(self.app,"Select or fetch cover art first","warning"); return
+        if not self._files: show_toast(self.app,"Add files first","warning"); return
+        total=len(self._files); self.prog.configure(value=0)
+        self.status_lbl.config(text=f"Applying cover art to {total} files...",fg=YELLOW)
+        def _do():
+            ok=0; fail=0
+            for i,fp in enumerate(self._files):
+                try:
+                    embed_cover_art(fp,self._new_art,self._new_mime or "image/jpeg")
+                    ok+=1
+                except Exception: fail+=1
+                self.after(0,lambda p=int((i+1)/total*100):self.prog.configure(value=p))
+            msg=f"Done! {ok} files updated"+(f", {fail} failed" if fail else "")
+            self.after(0,lambda:(self.status_lbl.config(text=msg,fg=LIME_DK if fail==0 else YELLOW),
+                self._refresh_list(),show_toast(self.app,msg,"success" if fail==0 else "warning")))
+        threading.Thread(target=_do,daemon=True).start()
+    def _remove_art(self):
+        sel=self.file_lb.curselection()
+        if not sel: show_toast(self.app,"Select a file first","warning"); return
+        idx=sel[0]
+        if idx>=len(self._files): return
+        fp=self._files[idx]
+        try:
+            audio=mutagen.File(fp)
+            if audio is None: return
+            from mutagen.mp3 import MP3 as _MP3; from mutagen.flac import FLAC as _FLAC
+            from mutagen.mp4 import MP4 as _MP4; from mutagen.wave import WAVE as _WAVE
+            if isinstance(audio,(_MP3,_WAVE)):
+                if audio.tags: audio.tags.delall("APIC")
+            elif isinstance(audio,_FLAC):
+                audio.clear_pictures()
+            elif isinstance(audio,_MP4):
+                if audio.tags and 'covr' in audio.tags: del audio.tags['covr']
+            elif hasattr(audio,'tags') and audio.tags and 'metadata_block_picture' in audio:
+                del audio['metadata_block_picture']
+            audio.save()
+            show_toast(self.app,f"Cover art removed from {os.path.basename(fp)}","info")
+            self._refresh_list(); self._select_file(idx); self._show_current_art(fp)
+        except Exception as e:
+            show_toast(self.app,f"Error: {str(e)[:60]}","error")
 
 
 # ── Launch ────────────────────────────────────────────────────────────────────
