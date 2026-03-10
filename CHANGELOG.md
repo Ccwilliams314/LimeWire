@@ -1,5 +1,63 @@
 # Changelog
 
+## v2.0.1 — Visual Facelift (2026-03-09)
+
+### Typography
+- Body text bumped to 11pt, buttons to 10pt for better readability
+- Logo uses Segoe UI Black 22pt for stronger branding
+- New F_CAPTION (8pt) and F_LABEL (9pt) font tiers
+- Monospace font bumped to 10pt to match body text
+
+### Theme Refinements
+- 4 new color tokens: BTN_PRESSED, CARD_SHADOW, DIVIDER, FOCUS_RING
+- Fixed WCAG contrast issues in Light theme (TEXT_DIM)
+- Fixed CARD_BG matching PANEL in Dark and LiveWire themes
+- High Contrast theme: improved TEXT_DIM and panel layering
+- Classic theme: improved TEXT_DIM contrast
+- Backward-compatible defaults for community themes missing new keys
+
+### Button Polish
+- ModernBtn: increased padding (20x8), radius 10, subtle outline ring
+- Smooth 3-step hover transitions via color lerp animation
+- ClassicBtn now has visible SURFACE_2 background instead of blending into page
+- Improved disabled state visual (SURFACE_2 + faded text)
+
+### Card & Input Styling
+- GroupBox uses CARD_BG background (distinct from page), thinner 1px border
+- Accent stripe: 4px wide, 85% height with offset for polished look
+- Entry cursor color matches accent (LIME)
+- Checkboxes: active foreground lights up in LIME, hand cursor
+- Listbox scrollbar: thinner 10px ttk.Scrollbar
+
+### Logo Bar
+- Height 56→52px, smoothstep gradient interpolation
+- Lightning bolt icon, drop shadow on title text
+- Version badge: 8pt with outline, accent-derived colors
+- Status: smaller dot, "Ready" label, F_CAPTION font
+
+### Toolbar Icons
+- All emoji replaced with monochrome Unicode symbols (Segoe UI Symbol 13pt)
+- Toolbar height 48→44px, DIVIDER separators
+- Consistent rendering across all Windows versions
+
+### Status Bar
+- SURFACE_3 background (distinct from content area), 26px height
+- Compact download count (↓ N), DIVIDER separators
+- Module indicator uses semantic SUCCESS/WARNING/ERROR colors
+
+### Toast Notifications
+- Border tint derived from toast bg color (more cohesive)
+- Larger icon (16pt), more padding, close button (✕)
+- New "success" toast level
+
+### Progress Bars & Scrollbars
+- Thinner progress bars (8px), softer SURFACE_2 trough
+- New Thin variant (4px) for inline indicators
+- All scrollbars themed via ttk (10px width, dark-matching colors)
+- Treeview row height 24→28px with better heading style
+
+---
+
 ## v2.0.0 — Cross-Platform & Plugins (2026-03-09)
 
 ### v1.2: Keyboard & Navigation

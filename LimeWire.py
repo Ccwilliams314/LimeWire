@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LimeWire v2.0.0 — Studio Edition
+LimeWire v2.0.1 — Studio Edition
 The modern music utility for everything. 19-tab cross-platform audio production studio.
 Features: Download, Batch DL, Playlist, Convert, Player (crossfade/EQ),
           Stem Separation (Demucs), Audio Analysis (BPM/Key/LUFS),
@@ -190,7 +190,7 @@ PLATFORM = "windows" if IS_WINDOWS else ("macos" if IS_MACOS else "linux")
 # ═══════════════════════════════════════════════════════════════════════════════
 THEME_LIGHT={
     "BG":"#F0F2F5","BG_DARK":"#E4E6EA","PANEL":"#FFFFFF","WHITE":"#FFFFFF","BLACK":"#1A1A2E",
-    "TEXT":"#1A1A2E","TEXT_DIM":"#5A6270","TEXT_BLUE":"#0A58CA",
+    "TEXT":"#1A1A2E","TEXT_DIM":"#4A5568","TEXT_BLUE":"#0A58CA",
     "LIME":"#27AE60","LIME_DK":"#1E8449","LIME_LT":"#82E0AA",
     "BLUE_HL":"#0D6EFD","RED":"#DC3545","YELLOW":"#E0A800","ORANGE":"#E8590C",
     "TOOLBAR":"#FFFFFF","BORDER_L":"#D0D5DD","BORDER_D":"#BFC5CF","INPUT_BG":"#FFFFFF","TROUGH":"#DEE2E6",
@@ -201,6 +201,7 @@ THEME_LIGHT={
     "SURFACE":"#FFFFFF","SURFACE_2":"#F5F6F8","SURFACE_3":"#E4E6EA",
     "ACCENT_START":"#27AE60","ACCENT_END":"#17A589",
     "CANVAS_BG":"#161B22",
+    "BTN_PRESSED":"#D0D5DD","CARD_SHADOW":"#C8CDD5","DIVIDER":"#E2E6EB","FOCUS_RING":"#0D6EFD",
 }
 THEME_DARK={
     "BG":"#1A1D21","BG_DARK":"#13161A","PANEL":"#22262B","WHITE":"#2A2E33","BLACK":"#0D0F12",
@@ -208,13 +209,14 @@ THEME_DARK={
     "LIME":"#2ECC71","LIME_DK":"#27AE60","LIME_LT":"#56D384",
     "BLUE_HL":"#4A90D9","RED":"#EF4444","YELLOW":"#FBBF24","ORANGE":"#F97316",
     "TOOLBAR":"#1E2227","BORDER_L":"#343A40","BORDER_D":"#13161A","INPUT_BG":"#22262B","TROUGH":"#343A40",
-    "CARD_BG":"#22262B","CARD_BORDER":"#343A40","BTN_HOVER":"#2C3035",
+    "CARD_BG":"#242930","CARD_BORDER":"#343A40","BTN_HOVER":"#2C3035",
     "LIME_HOVER":"#25A35A","ORANGE_HOVER":"#EA6C0E",
     "INPUT_BORDER":"#343A40","INPUT_FOCUS":"#4A90D9","TAB_ACTIVE":"#2ECC71",
     "SUCCESS":"#2ECC71","WARNING":"#FBBF24","ERROR":"#EF4444","INFO":"#22D3EE",
     "SURFACE":"#22262B","SURFACE_2":"#1A1D21","SURFACE_3":"#13161A",
     "ACCENT_START":"#2ECC71","ACCENT_END":"#1ABC9C",
     "CANVAS_BG":"#0D0F12",
+    "BTN_PRESSED":"#1A1D21","CARD_SHADOW":"#0D0F12","DIVIDER":"#2C3035","FOCUS_RING":"#4A90D9",
 }
 THEME_MODERN={
     "BG":"#0D1117","BG_DARK":"#010409","PANEL":"#161B22","WHITE":"#21262D","BLACK":"#010409",
@@ -229,6 +231,7 @@ THEME_MODERN={
     "SURFACE":"#161B22","SURFACE_2":"#0D1117","SURFACE_3":"#010409",
     "ACCENT_START":"#3FB950","ACCENT_END":"#1ABC9C",
     "CANVAS_BG":"#010409",
+    "BTN_PRESSED":"#21262D","CARD_SHADOW":"#010409","DIVIDER":"#262C36","FOCUS_RING":"#1F6FEB",
 }
 THEME_SYNTHWAVE={
     "BG":"#0C0C0C","BG_DARK":"#060606","PANEL":"#1A1A2E","WHITE":"#16213E","BLACK":"#060606",
@@ -243,6 +246,7 @@ THEME_SYNTHWAVE={
     "SURFACE":"#1A1A2E","SURFACE_2":"#0C0C0C","SURFACE_3":"#060606",
     "ACCENT_START":"#FF2975","ACCENT_END":"#8C1EFF",
     "CANVAS_BG":"#060606",
+    "BTN_PRESSED":"#190830","CARD_SHADOW":"#060606","DIVIDER":"#1C1640","FOCUS_RING":"#8C1EFF",
 }
 THEME_DRACULA={
     "BG":"#282A36","BG_DARK":"#21222C","PANEL":"#44475A","WHITE":"#44475A","BLACK":"#191A21",
@@ -257,6 +261,7 @@ THEME_DRACULA={
     "SURFACE":"#44475A","SURFACE_2":"#282A36","SURFACE_3":"#21222C",
     "ACCENT_START":"#FF79C6","ACCENT_END":"#BD93F9",
     "CANVAS_BG":"#191A21",
+    "BTN_PRESSED":"#4A4D62","CARD_SHADOW":"#191A21","DIVIDER":"#383A4A","FOCUS_RING":"#BD93F9",
 }
 THEME_CATPPUCCIN={
     "BG":"#1E1E2E","BG_DARK":"#181825","PANEL":"#313244","WHITE":"#313244","BLACK":"#11111B",
@@ -271,6 +276,7 @@ THEME_CATPPUCCIN={
     "SURFACE":"#313244","SURFACE_2":"#1E1E2E","SURFACE_3":"#181825",
     "ACCENT_START":"#CBA6F7","ACCENT_END":"#F5C2E7",
     "CANVAS_BG":"#11111B",
+    "BTN_PRESSED":"#333548","CARD_SHADOW":"#11111B","DIVIDER":"#383A4F","FOCUS_RING":"#89B4FA",
 }
 THEME_TOKYO={
     "BG":"#1A1B26","BG_DARK":"#16161E","PANEL":"#292E42","WHITE":"#292E42","BLACK":"#0D0E16",
@@ -285,6 +291,7 @@ THEME_TOKYO={
     "SURFACE":"#292E42","SURFACE_2":"#1A1B26","SURFACE_3":"#16161E",
     "ACCENT_START":"#7AA2F7","ACCENT_END":"#BB9AF7",
     "CANVAS_BG":"#0D0E16",
+    "BTN_PRESSED":"#2A3050","CARD_SHADOW":"#0D0E16","DIVIDER":"#2A2F44","FOCUS_RING":"#BB9AF7",
 }
 THEME_SPOTIFY={
     "BG":"#121212","BG_DARK":"#0A0A0A","PANEL":"#212121","WHITE":"#282828","BLACK":"#060606",
@@ -299,10 +306,11 @@ THEME_SPOTIFY={
     "SURFACE":"#212121","SURFACE_2":"#121212","SURFACE_3":"#0A0A0A",
     "ACCENT_START":"#1DB954","ACCENT_END":"#1ED760",
     "CANVAS_BG":"#060606",
+    "BTN_PRESSED":"#242424","CARD_SHADOW":"#060606","DIVIDER":"#282828","FOCUS_RING":"#1DB954",
 }
 THEME_CLASSIC={
     "BG":"#000000","BG_DARK":"#000000","PANEL":"#1A1A1A","WHITE":"#1A1A1A","BLACK":"#000000",
-    "TEXT":"#E0E0E0","TEXT_DIM":"#808080","TEXT_BLUE":"#3CFF3C",
+    "TEXT":"#E0E0E0","TEXT_DIM":"#999999","TEXT_BLUE":"#3CFF3C",
     "LIME":"#1EFF00","LIME_DK":"#18CC00","LIME_LT":"#5AFF3C",
     "BLUE_HL":"#32CD32","RED":"#FF3333","YELLOW":"#FFFF00","ORANGE":"#FF8C00",
     "TOOLBAR":"#0A0A0A","BORDER_L":"#2D2D2D","BORDER_D":"#000000","INPUT_BG":"#1A1A1A","TROUGH":"#2D2D2D",
@@ -313,6 +321,7 @@ THEME_CLASSIC={
     "SURFACE":"#1A1A1A","SURFACE_2":"#0A0A0A","SURFACE_3":"#000000",
     "ACCENT_START":"#1EFF00","ACCENT_END":"#02E102",
     "CANVAS_BG":"#000000",
+    "BTN_PRESSED":"#1A1A1A","CARD_SHADOW":"#000000","DIVIDER":"#222222","FOCUS_RING":"#1EFF00",
 }
 THEME_NORD={
     "BG":"#2E3440","BG_DARK":"#272C36","PANEL":"#3B4252","WHITE":"#3B4252","BLACK":"#242933",
@@ -327,6 +336,7 @@ THEME_NORD={
     "SURFACE":"#3B4252","SURFACE_2":"#2E3440","SURFACE_3":"#272C36",
     "ACCENT_START":"#88C0D0","ACCENT_END":"#5E81AC",
     "CANVAS_BG":"#242933",
+    "BTN_PRESSED":"#353B49","CARD_SHADOW":"#242933","DIVIDER":"#3C4350","FOCUS_RING":"#5E81AC",
 }
 THEME_GRUVBOX={
     "BG":"#282828","BG_DARK":"#1D2021","PANEL":"#3C3836","WHITE":"#3C3836","BLACK":"#1D2021",
@@ -341,6 +351,7 @@ THEME_GRUVBOX={
     "SURFACE":"#3C3836","SURFACE_2":"#282828","SURFACE_3":"#1D2021",
     "ACCENT_START":"#D79921","ACCENT_END":"#D65D0E",
     "CANVAS_BG":"#1D2021",
+    "BTN_PRESSED":"#3A3530","CARD_SHADOW":"#1D2021","DIVIDER":"#3C3732","FOCUS_RING":"#458588",
 }
 THEME_LIVEWIRE={
     "BG":"#080C12","BG_DARK":"#040810","PANEL":"#101820","WHITE":"#142030","BLACK":"#020408",
@@ -348,17 +359,18 @@ THEME_LIVEWIRE={
     "LIME":"#00E5FF","LIME_DK":"#00B8D4","LIME_LT":"#48F7FF",
     "BLUE_HL":"#0066FF","RED":"#FF1744","YELLOW":"#FFD600","ORANGE":"#FFAB00",
     "TOOLBAR":"#0A1018","BORDER_L":"#1A2A38","BORDER_D":"#040810","INPUT_BG":"#101820","TROUGH":"#1A2A38",
-    "CARD_BG":"#101820","CARD_BORDER":"#1A2A38","BTN_HOVER":"#1A2A38",
+    "CARD_BG":"#121C28","CARD_BORDER":"#1A2A38","BTN_HOVER":"#1A2A38",
     "LIME_HOVER":"#00B8D4","ORANGE_HOVER":"#E09600",
     "INPUT_BORDER":"#1A2A38","INPUT_FOCUS":"#00E5FF","TAB_ACTIVE":"#00E5FF",
     "SUCCESS":"#00E676","WARNING":"#FFD600","ERROR":"#FF1744","INFO":"#48F7FF",
     "SURFACE":"#101820","SURFACE_2":"#080C12","SURFACE_3":"#040810",
     "ACCENT_START":"#00E5FF","ACCENT_END":"#0066FF",
     "CANVAS_BG":"#020408",
+    "BTN_PRESSED":"#0A1218","CARD_SHADOW":"#020406","DIVIDER":"#162230","FOCUS_RING":"#00E5FF",
 }
 THEME_HIGHCONTRAST={
-    "BG":"#000000","BG_DARK":"#000000","PANEL":"#000000","WHITE":"#FFFFFF","BLACK":"#000000",
-    "TEXT":"#FFFFFF","TEXT_DIM":"#CCCCCC","TEXT_BLUE":"#00CCFF",
+    "BG":"#000000","BG_DARK":"#000000","PANEL":"#0A0A0A","WHITE":"#FFFFFF","BLACK":"#000000",
+    "TEXT":"#FFFFFF","TEXT_DIM":"#E0E0E0","TEXT_BLUE":"#00CCFF",
     "LIME":"#00FF00","LIME_DK":"#00CC00","LIME_LT":"#66FF66",
     "BLUE_HL":"#0088FF","RED":"#FF0000","YELLOW":"#FFFF00","ORANGE":"#FF8800",
     "TOOLBAR":"#111111","BORDER_L":"#FFFFFF","BORDER_D":"#FFFFFF","INPUT_BG":"#111111","TROUGH":"#333333",
@@ -369,6 +381,7 @@ THEME_HIGHCONTRAST={
     "SURFACE":"#111111","SURFACE_2":"#000000","SURFACE_3":"#000000",
     "ACCENT_START":"#00FF00","ACCENT_END":"#00CCFF",
     "CANVAS_BG":"#000000",
+    "BTN_PRESSED":"#222222","CARD_SHADOW":"#000000","DIVIDER":"#444444","FOCUS_RING":"#FFFF00",
 }
 THEMES={"livewire":THEME_LIVEWIRE,"light":THEME_LIGHT,"dark":THEME_DARK,"modern":THEME_MODERN,
         "synthwave":THEME_SYNTHWAVE,"dracula":THEME_DRACULA,"catppuccin":THEME_CATPPUCCIN,
@@ -381,11 +394,12 @@ TEXT="#E0F4FF"; TEXT_DIM="#4A7A90"; TEXT_BLUE="#48F7FF"
 LIME="#00E5FF"; LIME_DK="#00B8D4"; LIME_LT="#48F7FF"
 BLUE_HL="#0066FF"; RED="#FF1744"; YELLOW="#FFD600"; ORANGE="#FFAB00"
 TOOLBAR="#0A1018"; BORDER_L="#1A2A38"; BORDER_D="#040810"; INPUT_BG="#101820"; TROUGH="#1A2A38"
-CARD_BG="#101820"; CARD_BORDER="#1A2A38"; BTN_HOVER="#1A2A38"
+CARD_BG="#121C28"; CARD_BORDER="#1A2A38"; BTN_HOVER="#1A2A38"
 LIME_HOVER="#00B8D4"; ORANGE_HOVER="#E09600"
 INPUT_BORDER="#1A2A38"; INPUT_FOCUS="#00E5FF"; TAB_ACTIVE="#00E5FF"
 SUCCESS="#00E676"; WARNING="#FFD600"; ERROR="#FF1744"; INFO="#48F7FF"
 SURFACE="#101820"; SURFACE_2="#080C12"; SURFACE_3="#040810"
+BTN_PRESSED="#0A1218"; CARD_SHADOW="#020406"; DIVIDER="#162230"; FOCUS_RING="#00E5FF"
 ACCENT_START="#00E5FF"; ACCENT_END="#0066FF"; CANVAS_BG="#020408"
 
 def apply_theme(mode="livewire"):
@@ -394,22 +408,29 @@ def apply_theme(mode="livewire"):
     t=THEMES.get(mode,THEME_LIVEWIRE)
     g=globals()
     for k,v in t.items(): g[k]=v
+    # Backward-compat defaults for community themes missing new keys
+    if "BTN_PRESSED" not in t: g["BTN_PRESSED"]=_lerp_color(g["BTN_HOVER"],"#000000",0.3)
+    if "CARD_SHADOW" not in t: g["CARD_SHADOW"]=g["BG_DARK"]
+    if "DIVIDER" not in t: g["DIVIDER"]=_lerp_color(g["BORDER_L"],g["BG"],0.5)
+    if "FOCUS_RING" not in t: g["FOCUS_RING"]=g["INPUT_FOCUS"]
     # Modern fonts for all themes (Segoe UI everywhere)
-    g["F_TITLE"]=("Segoe UI Semibold",18); g["F_LOGO"]=("Segoe UI",20,"bold")
-    g["F_BODY"]=("Segoe UI",10); g["F_BOLD"]=("Segoe UI Semibold",10)
-    g["F_SMALL"]=("Segoe UI",9); g["F_BTN"]=("Segoe UI Semibold",9)
-    g["F_MONO"]=("Cascadia Code",9); g["F_TAB"]=("Segoe UI Semibold",9)
-    g["F_STATUS"]=("Segoe UI",8); g["F_HEADER"]=("Segoe UI Semibold",13)
-    g["F_SECTION"]=("Segoe UI Semibold",10)
-    g["F_H1"]=("Segoe UI Semibold",24); g["F_H2"]=("Segoe UI Semibold",20)
-    g["F_H3"]=("Segoe UI Semibold",16); g["F_H4"]=("Segoe UI Semibold",13)
+    g["F_TITLE"]=("Segoe UI Semibold",20); g["F_LOGO"]=("Segoe UI Black",22)
+    g["F_BODY"]=("Segoe UI",11); g["F_BOLD"]=("Segoe UI Semibold",11)
+    g["F_SMALL"]=("Segoe UI",9); g["F_BTN"]=("Segoe UI Semibold",10)
+    g["F_MONO"]=("Cascadia Code",10); g["F_TAB"]=("Segoe UI Semibold",8)
+    g["F_STATUS"]=("Segoe UI",9); g["F_HEADER"]=("Segoe UI Semibold",14)
+    g["F_SECTION"]=("Segoe UI Semibold",11)
+    g["F_H1"]=("Segoe UI Bold",26); g["F_H2"]=("Segoe UI Semibold",21)
+    g["F_H3"]=("Segoe UI Semibold",17); g["F_H4"]=("Segoe UI Semibold",14)
+    g["F_CAPTION"]=("Segoe UI",8); g["F_LABEL"]=("Segoe UI Semibold",9)
 
-F_TITLE=("Segoe UI Semibold",18); F_LOGO=("Segoe UI",20,"bold"); F_BODY=("Segoe UI",10)
-F_BOLD=("Segoe UI Semibold",10); F_SMALL=("Segoe UI",9); F_BTN=("Segoe UI Semibold",9)
-F_MONO=("Cascadia Code",9); F_TAB=("Segoe UI Semibold",9); F_STATUS=("Segoe UI",8)
-F_HEADER=("Segoe UI Semibold",13); F_SECTION=("Segoe UI Semibold",10)
-F_H1=("Segoe UI Semibold",24); F_H2=("Segoe UI Semibold",20)
-F_H3=("Segoe UI Semibold",16); F_H4=("Segoe UI Semibold",13)
+F_TITLE=("Segoe UI Semibold",20); F_LOGO=("Segoe UI Black",22); F_BODY=("Segoe UI",11)
+F_BOLD=("Segoe UI Semibold",11); F_SMALL=("Segoe UI",9); F_BTN=("Segoe UI Semibold",10)
+F_MONO=("Cascadia Code",10); F_TAB=("Segoe UI Semibold",8); F_STATUS=("Segoe UI",9)
+F_HEADER=("Segoe UI Semibold",14); F_SECTION=("Segoe UI Semibold",11)
+F_H1=("Segoe UI Bold",26); F_H2=("Segoe UI Semibold",21)
+F_H3=("Segoe UI Semibold",17); F_H4=("Segoe UI Semibold",14)
+F_CAPTION=("Segoe UI",8); F_LABEL=("Segoe UI Semibold",9)
 
 # ── Localization / i18n ────────────────────────────────────────────────────────
 _LANG_STRINGS={
@@ -1481,7 +1502,7 @@ def _srt_timestamp(s):
 # MODERN UI WIDGETS
 # ═══════════════════════════════════════════════════════════════════════════════
 
-SP_XS=4; SP_SM=8; SP_MD=12; SP_LG=16; SP_XL=24
+SP_XS=4; SP_SM=8; SP_MD=12; SP_LG=16; SP_XL=24; SP_2XL=32
 
 def _round_rect(cv,x1,y1,x2,y2,radius=10,**kw):
     """Draw a smooth rounded rectangle on a Canvas."""
@@ -1492,9 +1513,9 @@ def _round_rect(cv,x1,y1,x2,y2,radius=10,**kw):
     return cv.create_polygon(pts,smooth=True,**kw)
 
 class ModernBtn(tk.Canvas):
-    """Canvas-based rounded button with hover/press feedback."""
+    """Canvas-based rounded button with hover/press feedback and smooth transitions."""
     def __init__(self,parent,text="",command=None,width=None,bg_color=None,fg_color=None,
-                 hover_color=None,font=None,padx=16,pady=6,radius=8,**kw):
+                 hover_color=None,font=None,padx=20,pady=8,radius=10,**kw):
         self._bg_c=bg_color or BG
         self._fg_c=fg_color or TEXT
         self._hover_c=hover_color or BTN_HOVER
@@ -1503,8 +1524,7 @@ class ModernBtn(tk.Canvas):
         self._cmd=command
         self._radius=radius
         self._padx=padx; self._pady=pady
-        self._pressed=False
-        # Measure text to set canvas size
+        self._pressed=False; self._animating=False
         _tmp=tk.Label(parent,text=text,font=self._font)
         tw=_tmp.winfo_reqwidth(); th=_tmp.winfo_reqheight(); _tmp.destroy()
         if width: tw=max(tw,width*8)
@@ -1512,20 +1532,30 @@ class ModernBtn(tk.Canvas):
         super().__init__(parent,width=cw,height=ch,bg=parent.cget("bg") if hasattr(parent,"cget") else BG,
                          highlightthickness=0,bd=0,cursor="hand2",**kw)
         self._cw=cw; self._ch=ch
-        self._rect=_round_rect(self,1,1,cw-1,ch-1,radius=radius,fill=self._bg_c,outline="")
+        self._outline=_round_rect(self,1,1,cw-1,ch-1,radius=radius,fill="",outline=DIVIDER,width=1)
+        self._rect=_round_rect(self,2,2,cw-2,ch-2,radius=max(1,radius-1),fill=self._bg_c,outline="")
         self._label=self.create_text(cw//2,ch//2,text=text,font=self._font,fill=self._fg_c)
+        self.tag_raise(self._label)
         self.bind("<Enter>",self._on_enter)
         self.bind("<Leave>",self._on_leave)
         self.bind("<ButtonPress-1>",self._on_press)
         self.bind("<ButtonRelease-1>",self._on_release)
 
+    def _animate_to(self,target,steps=3,step=0):
+        if step>=steps:
+            self.itemconfig(self._rect,fill=target); self._animating=False; return
+        self._animating=True
+        current=self.itemcget(self._rect,"fill")
+        mid=_lerp_color(current,target,(step+1)/steps)
+        self.itemconfig(self._rect,fill=mid)
+        self.after(25,lambda:self._animate_to(target,steps,step+1))
     def _on_enter(self,e=None):
-        self.itemconfig(self._rect,fill=self._hover_c)
+        self._animate_to(self._hover_c,steps=3)
     def _on_leave(self,e=None):
-        self._pressed=False; self.itemconfig(self._rect,fill=self._bg_c)
+        self._pressed=False; self._animate_to(self._bg_c,steps=3)
     def _on_press(self,e=None):
         self._pressed=True
-        self.itemconfig(self._rect,fill=_lerp_color(self._hover_c,"#000000",0.15))
+        self.itemconfig(self._rect,fill=BTN_PRESSED)
     def _on_release(self,e=None):
         if self._pressed and self._cmd:
             self._pressed=False; self.itemconfig(self._rect,fill=self._hover_c)
@@ -1543,11 +1573,14 @@ class ModernBtn(tk.Canvas):
         if "state" in kw:
             st=kw.pop("state")
             if st=="disabled":
-                self.itemconfig(self._rect,fill=TROUGH); self.itemconfig(self._label,fill=TEXT_DIM)
+                self.itemconfig(self._rect,fill=SURFACE_2)
+                self.itemconfig(self._label,fill=_lerp_color(TEXT_DIM,BG,0.3))
+                self.itemconfig(self._outline,outline=DIVIDER)
                 self.unbind("<Enter>"); self.unbind("<Leave>"); self.unbind("<ButtonPress-1>"); self.unbind("<ButtonRelease-1>")
                 self["cursor"]=""
             else:
                 self.itemconfig(self._rect,fill=self._bg_c); self.itemconfig(self._label,fill=self._fg_c)
+                self.itemconfig(self._outline,outline=DIVIDER)
                 self.bind("<Enter>",self._on_enter); self.bind("<Leave>",self._on_leave)
                 self.bind("<ButtonPress-1>",self._on_press); self.bind("<ButtonRelease-1>",self._on_release)
                 self["cursor"]="hand2"
@@ -1560,66 +1593,75 @@ class ModernBtn(tk.Canvas):
         return super().cget(key)
 
 def ClassicBtn(parent,text,cmd,width=None):
-    return ModernBtn(parent,text=text,command=cmd,width=width)
+    return ModernBtn(parent,text=text,command=cmd,width=width,bg_color=SURFACE_2,fg_color=TEXT,hover_color=BTN_HOVER)
 def LimeBtn(parent,text,cmd,width=None):
     return ModernBtn(parent,text=text,command=cmd,width=width,bg_color=LIME,fg_color="#000000",hover_color=LIME_HOVER)
 def OrangeBtn(parent,text,cmd,width=None):
     return ModernBtn(parent,text=text,command=cmd,width=width,bg_color=ORANGE,fg_color="#FFFFFF",hover_color=ORANGE_HOVER)
 def GroupBox(parent,text):
-    lf=tk.LabelFrame(parent,text=f"  {text}  ",font=F_SECTION,bg=BG,fg=TEXT,
+    lf=tk.LabelFrame(parent,text=f"  {text}  ",font=F_SECTION,bg=CARD_BG,fg=TEXT,
                       relief="flat",bd=0,padx=SP_LG,pady=SP_MD,
-                      highlightthickness=2,highlightbackground=CARD_BORDER,highlightcolor=CARD_BORDER,
+                      highlightthickness=1,highlightbackground=CARD_BORDER,highlightcolor=CARD_BORDER,
                       labelanchor="nw")
-    # Accent stripe on the left edge
-    accent=tk.Frame(lf,bg=LIME,width=3)
-    accent.place(x=0,y=0,relheight=1.0)
+    accent=tk.Frame(lf,bg=LIME,width=4)
+    accent.place(x=0,y=8,relheight=0.85)
     return lf
 def ClassicEntry(parent,var,width=40,**kw):
     return tk.Entry(parent,textvariable=var,font=F_BODY,bg=INPUT_BG,fg=TEXT,relief="flat",bd=0,
-                    insertbackground=TEXT,width=width,
-                    highlightthickness=2,highlightbackground=INPUT_BORDER,highlightcolor=INPUT_FOCUS,**kw)
+                    insertbackground=LIME,width=width,
+                    highlightthickness=2,highlightbackground=INPUT_BORDER,highlightcolor=INPUT_FOCUS,
+                    selectbackground=BLUE_HL,selectforeground="#FFFFFF",**kw)
 def ClassicCombo(parent,var,values,width=14):
     return ttk.Combobox(parent,textvariable=var,values=values,state="readonly",width=width,font=F_BODY)
 def ClassicCheck(parent,text,var):
     return tk.Checkbutton(parent,text=text,variable=var,font=F_BODY,bg=BG,fg=TEXT,activebackground=BG,
-                          activeforeground=TEXT,selectcolor=INPUT_BG,anchor="w",relief="flat",bd=0,
-                          highlightthickness=0,padx=SP_XS,pady=2,indicatoron=True)
+                          activeforeground=LIME,selectcolor=SURFACE_2,anchor="w",relief="flat",bd=0,
+                          highlightthickness=0,padx=SP_SM,pady=3,indicatoron=True,cursor="hand2")
 def ClassicListbox(parent,height=8,**kw):
-    f=tk.Frame(parent,bg=CARD_BORDER,padx=1,pady=1)
+    f=tk.Frame(parent,bg=INPUT_BORDER,padx=1,pady=1)
     lb=tk.Listbox(f,font=F_BODY,bg=INPUT_BG,fg=TEXT,selectbackground=BLUE_HL,selectforeground="#FFFFFF",
-                  relief="flat",height=height,activestyle="none",bd=0,highlightthickness=0,**kw)
-    sb=tk.Scrollbar(f,orient="vertical",command=lb.yview,relief="flat",bd=0,highlightthickness=0)
+                  relief="flat",height=height,activestyle="none",bd=0,highlightthickness=0,
+                  selectborderwidth=0,**kw)
+    sb=ttk.Scrollbar(f,orient="vertical",command=lb.yview,style="Vertical.TScrollbar")
     lb.config(yscrollcommand=sb.set)
     sb.pack(side="right",fill="y"); lb.pack(side="left",fill="both",expand=True)
     return f,lb
-def ClassicProgress(parent):
-    return ttk.Progressbar(parent,style="Lime.Horizontal.TProgressbar",mode="determinate",maximum=100)
+def ClassicProgress(parent,thin=False):
+    style="Thin.Horizontal.TProgressbar" if thin else "Lime.Horizontal.TProgressbar"
+    return ttk.Progressbar(parent,style=style,mode="determinate",maximum=100)
 def HSep(parent):
-    tk.Frame(parent,bg=CARD_BORDER,height=1).pack(fill="x",pady=SP_XS)
+    tk.Frame(parent,bg=DIVIDER,height=1).pack(fill="x",pady=SP_SM)
 def init_limewire_styles(root):
     s=ttk.Style(root); s.theme_use("clam")
-    s.configure("TCombobox",fieldbackground=INPUT_BG,background=BG,foreground=TEXT,arrowcolor=TEXT,
+    s.configure("TCombobox",fieldbackground=INPUT_BG,background=SURFACE_2,foreground=TEXT,arrowcolor=TEXT_DIM,
                 selectbackground=BLUE_HL,selectforeground="#FFFFFF",bordercolor=INPUT_BORDER,
-                borderwidth=1,relief="flat",padding=[8,6])
+                borderwidth=1,relief="flat",padding=[10,7])
     s.map("TCombobox",bordercolor=[("focus",INPUT_FOCUS)],lightcolor=[("focus",INPUT_FOCUS)],
           darkcolor=[("focus",INPUT_FOCUS)],
           fieldbackground=[("readonly",INPUT_BG)],foreground=[("readonly",TEXT)])
-    # Style the dropdown list
     root.option_add("*TCombobox*Listbox.background",INPUT_BG)
     root.option_add("*TCombobox*Listbox.foreground",TEXT)
     root.option_add("*TCombobox*Listbox.selectBackground",BLUE_HL)
     root.option_add("*TCombobox*Listbox.selectForeground","#FFFFFF")
     root.option_add("*TCombobox*Listbox.font",F_BODY)
-    # Spinbox global styling
     root.option_add("*Spinbox.background",INPUT_BG)
     root.option_add("*Spinbox.foreground",TEXT)
     root.option_add("*Spinbox.buttonBackground",BG)
-    root.option_add("*Spinbox.insertBackground",TEXT)
+    root.option_add("*Spinbox.insertBackground",LIME)
     root.option_add("*Spinbox.selectBackground",BLUE_HL)
     root.option_add("*Spinbox.selectForeground","#FFFFFF")
-    s.configure("Lime.Horizontal.TProgressbar",troughcolor=TROUGH,background=LIME,
-                bordercolor=CARD_BORDER,lightcolor=LIME,darkcolor=LIME_DK,thickness=10,borderwidth=0)
+    s.configure("Lime.Horizontal.TProgressbar",troughcolor=SURFACE_2,background=LIME,
+                bordercolor=SURFACE_2,lightcolor=LIME_LT,darkcolor=LIME_DK,thickness=8,borderwidth=0)
+    s.configure("Thin.Horizontal.TProgressbar",troughcolor=SURFACE_2,background=LIME,
+                bordercolor=SURFACE_2,lightcolor=LIME_LT,darkcolor=LIME_DK,thickness=4,borderwidth=0)
     s.configure("TScale",background=BG,troughcolor=TROUGH,sliderlength=18,sliderrelief="flat",borderwidth=0)
+    # Scrollbar theming
+    s.configure("TScrollbar",background=_lerp_color(BORDER_L,BG,0.3),troughcolor=SURFACE_3,
+                bordercolor=SURFACE_3,arrowcolor=TEXT_DIM,relief="flat",borderwidth=0,width=10)
+    s.map("TScrollbar",background=[("active",BORDER_L),("pressed",TEXT_DIM)])
+    s.configure("Vertical.TScrollbar",background=_lerp_color(BORDER_L,BG,0.3),
+                troughcolor=SURFACE_3,width=10)
+    s.map("Vertical.TScrollbar",background=[("active",BORDER_L),("pressed",TEXT_DIM)])
     s.configure("TNotebook",background=BG,borderwidth=0,tabmargins=[0,0,0,0])
     s.configure("TNotebook.Tab",background=BG,foreground=BG,padding=[0,0],width=0,
                 font=("Segoe UI",1),borderwidth=0,
@@ -1629,11 +1671,10 @@ def init_limewire_styles(root):
           lightcolor=[("selected",BG),("!selected",BG)],
           darkcolor=[("selected",BG),("!selected",BG)],
           bordercolor=[("selected",BG),("!selected",BG)])
-    # Treeview styling (History, Discovery)
     s.configure("Treeview",background=INPUT_BG,foreground=TEXT,fieldbackground=INPUT_BG,
-                borderwidth=0,font=F_BODY,rowheight=24)
-    s.configure("Treeview.Heading",background=BG,foreground=TEXT,font=F_BOLD,borderwidth=0,
-                relief="flat",padding=[8,4])
+                borderwidth=0,font=F_BODY,rowheight=28,relief="flat")
+    s.configure("Treeview.Heading",background=SURFACE_2,foreground=TEXT,font=F_BOLD,borderwidth=0,
+                relief="flat",padding=[10,6])
     s.map("Treeview",background=[("selected",BLUE_HL)],foreground=[("selected","#FFFFFF")])
     s.map("Treeview.Heading",background=[("active",BTN_HOVER)])
 
@@ -1641,7 +1682,8 @@ class ScrollFrame(tk.Frame):
     def __init__(self,parent,**kw):
         super().__init__(parent,bg=BG,**kw)
         self._cv=tk.Canvas(self,bg=BG,highlightthickness=0)
-        vsb=tk.Scrollbar(self,orient="vertical",command=self._cv.yview); self._cv.configure(yscrollcommand=vsb.set)
+        vsb=ttk.Scrollbar(self,orient="vertical",command=self._cv.yview,style="Vertical.TScrollbar")
+        self._cv.configure(yscrollcommand=vsb.set)
         vsb.pack(side="right",fill="y"); self._cv.pack(side="left",fill="both",expand=True)
         self.inner=tk.Frame(self._cv,bg=BG)
         self._wid=self._cv.create_window((0,0),window=self.inner,anchor="nw")
@@ -1671,12 +1713,12 @@ class ToolTip:
         self._aid=None
         tw=tk.Toplevel(self._w); tw.overrideredirect(True); tw.attributes("-topmost",True)
         tw.configure(bg=CARD_BORDER)
-        f=tk.Frame(tw,bg=SURFACE_2,padx=SP_SM,pady=SP_XS)
+        f=tk.Frame(tw,bg=SURFACE,padx=SP_MD,pady=SP_SM)
         f.pack(fill="both",expand=True,padx=1,pady=1)
-        tk.Label(f,text=self._text,font=F_SMALL,bg=SURFACE_2,fg=TEXT,wraplength=250,justify="left").pack()
+        tk.Label(f,text=self._text,font=F_SMALL,bg=SURFACE,fg=TEXT,wraplength=280,justify="left").pack()
         tw.update_idletasks()
         x=self._w.winfo_rootx()+self._w.winfo_width()//2-tw.winfo_width()//2
-        y=self._w.winfo_rooty()+self._w.winfo_height()+4
+        y=self._w.winfo_rooty()+self._w.winfo_height()+6
         tw.geometry(f"+{x}+{y}")
         self._tw=tw
 
@@ -1704,7 +1746,7 @@ class _ToastManager:
         for i,t in enumerate(self._stack):
             try:
                 w=t.winfo_width()
-                tx=pw-w-SP_LG; ty=py+56+i*52
+                tx=pw-w-SP_LG; ty=py+56+i*58
                 t._target_x=tx; t._y=ty
             except Exception: pass
 
@@ -1718,18 +1760,22 @@ class _Toast(tk.Toplevel):
         self.overrideredirect(True)
         self.attributes("-topmost",True)
         _bg=bg_color or LIME_DK; _fg=fg_color or "#FFFFFF"
-        self.configure(bg=CARD_BORDER)
+        self.configure(bg=_lerp_color(_bg,"#000000",0.3))
         inner=tk.Frame(self,bg=_bg); inner.pack(fill="both",expand=True,padx=1,pady=1)
-        row=tk.Frame(inner,bg=_bg); row.pack(fill="x",padx=SP_MD,pady=SP_SM)
+        row=tk.Frame(inner,bg=_bg); row.pack(fill="x",padx=SP_LG,pady=SP_MD)
         ico=icon or "\u2713"
-        tk.Label(row,text=ico,font=("Segoe UI",14),bg=_bg,fg=_fg).pack(side="left",padx=(0,10))
-        tk.Label(row,text=msg,font=F_BOLD,bg=_bg,fg=_fg,wraplength=380,justify="left").pack(side="left",fill="x")
+        tk.Label(row,text=ico,font=("Segoe UI Symbol",16),bg=_bg,fg=_fg).pack(side="left",padx=(0,SP_MD))
+        tk.Label(row,text=msg,font=F_BOLD,bg=_bg,fg=_fg,wraplength=350,justify="left").pack(side="left",fill="x")
+        close_btn=tk.Label(row,text="\u2715",font=F_CAPTION,bg=_bg,
+                            fg=_lerp_color(_fg,_bg,0.4),cursor="hand2")
+        close_btn.pack(side="right",padx=(SP_SM,0))
+        close_btn.bind("<Button-1>",lambda e:self._fade_out(0.8))
         self.update_idletasks()
         pw=parent.winfo_rootx()+parent.winfo_width()
         py=parent.winfo_rooty()
         w=self.winfo_width()
         idx=len(mgr._stack) if mgr else 0
-        self._target_x=pw-w-SP_LG; self._start_x=pw+10; self._y=py+56+idx*52
+        self._target_x=pw-w-SP_LG; self._start_x=pw+10; self._y=py+56+idx*58
         self.geometry(f"+{self._start_x}+{self._y}")
         self._slide_in()
         self.after(duration,self._fade_out)
@@ -1748,7 +1794,8 @@ class _Toast(tk.Toplevel):
         except Exception: pass
 
 def show_toast(parent,msg,level="info",duration=3000):
-    colors={"info":(LIME_DK,"#FFFFFF","\u2713"),"warn":(YELLOW,"#000000","\u26A0"),"error":(RED,"#FFFFFF","\u2717")}
+    colors={"info":(LIME_DK,"#FFFFFF","\u2713"),"warn":(WARNING,"#000000","\u26A0"),
+            "error":(ERROR,"#FFFFFF","\u2717"),"success":(SUCCESS,"#FFFFFF","\u2713")}
     bg,fg,ico=colors.get(level,(LIME_DK,"#FFFFFF","\u2139"))
     _toast_mgr.show(parent,msg,duration,bg,fg,ico)
 
@@ -1950,7 +1997,7 @@ class CommandPalette(tk.Toplevel):
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("LimeWire 2.0 Studio Edition"); self.minsize(760,700)
+        self.title("LimeWire 2.0.1 Studio Edition"); self.minsize(760,700)
         # Fit window to screen
         sw,sh=self.winfo_screenwidth(),self.winfo_screenheight()
         w,h=min(820,sw-40),min(960,sh-80)
@@ -2292,7 +2339,7 @@ class App(tk.Tk):
         if HAS_DEMUCS: caps.append("Demucs Stems")
         cap_str = ", ".join(caps) if caps else "None (install optional deps)"
         hm.add_command(label="About",command=lambda:messagebox.showinfo("About",
-            f"LimeWire v2.0 Studio Edition\n\n"
+            f"LimeWire v2.0.1 Studio Edition\n\n"
             f"The modern music utility for everything.\n"
             f"Powered by yt-dlp + Demucs + librosa + pydub\n\n"
             f"19 pages: Search, Batch DL, Playlist, Convert, Player,\n"
@@ -2311,35 +2358,40 @@ class App(tk.Tk):
         self.config(menu=mb)
 
     def _build_logo_bar(self):
-        LOGO_H=56
+        LOGO_H=52
         bar=tk.Canvas(self,height=LOGO_H,highlightthickness=0,bd=0); bar.pack(fill="x")
         def _draw_gradient(e=None):
             w=bar.winfo_width(); h=LOGO_H
             bar.delete("grad")
-            steps=max(1,w//4)
+            steps=max(1,w//3)
             for i in range(steps):
-                c=_lerp_color(ACCENT_START,ACCENT_END,i/max(1,steps-1))
+                t=i/max(1,steps-1); t=t*t*(3-2*t)  # smoothstep
+                c=_lerp_color(ACCENT_START,ACCENT_END,t)
                 x=int(i*w/steps); x2=int((i+1)*w/steps)+1
                 bar.create_rectangle(x,0,x2,h,fill=c,outline="",tags="grad")
+            bar.create_rectangle(0,h-1,w,h,fill=_lerp_color(ACCENT_END,"#000000",0.4),outline="",tags="grad")
             bar.tag_lower("grad")
-            # Redraw foreground items
             bar.delete("fg")
-            # Icon circle with glow
-            cx,cy=32,LOGO_H//2
-            bar.create_oval(cx-18,cy-18,cx+18,cy+18,fill="",outline="#555555",width=3,tags="fg")
-            bar.create_oval(cx-14,cy-14,cx+14,cy+14,fill="#3a6e4e",outline="",tags="fg")
-            bar.create_text(cx,cy,text="\u25C9",font=("Segoe UI",18),fill="#FFFFFF",tags="fg")
-            # Title
-            bar.create_text(62,LOGO_H//2,text="LimeWire",font=F_LOGO,fill="#FFFFFF",anchor="w",tags="fg")
-            # Pill badge
-            bx=220; by=LOGO_H//2
-            _round_rect(bar,bx,by-10,bx+90,by+10,radius=10,fill="#3a6e4e",outline="",tags="fg")
-            bar.create_text(bx+45,by,text="v2.0 Studio",font=("Segoe UI",7,"bold"),fill="#FFFFFF",tags="fg")
-            # Status indicator (right side)
-            sx=w-100; sy=LOGO_H//2
+            cx,cy=30,LOGO_H//2
+            bar.create_oval(cx-17,cy-17,cx+17,cy+17,fill="",
+                            outline=_lerp_color(ACCENT_START,"#FFFFFF",0.3),width=2,tags="fg")
+            bar.create_oval(cx-13,cy-13,cx+13,cy+13,
+                            fill=_lerp_color(ACCENT_START,"#000000",0.2),outline="",tags="fg")
+            bar.create_text(cx,cy,text="\u26A1",font=("Segoe UI",14),fill="#FFFFFF",tags="fg")
+            tx=56; ty=LOGO_H//2
+            bar.create_text(tx+1,ty+1,text="LimeWire",font=F_LOGO,
+                            fill=_lerp_color(ACCENT_END,"#000000",0.5),anchor="w",tags="fg")
+            bar.create_text(tx,ty,text="LimeWire",font=F_LOGO,fill="#FFFFFF",anchor="w",tags="fg")
+            bx=200; by=LOGO_H//2
+            _round_rect(bar,bx,by-11,bx+82,by+11,radius=11,
+                         fill=_lerp_color(ACCENT_START,"#000000",0.35),
+                         outline=_lerp_color(ACCENT_START,"#FFFFFF",0.15),tags="fg")
+            bar.create_text(bx+41,by,text="v2.0.1 Studio",font=("Segoe UI Semibold",8),fill="#FFFFFF",tags="fg")
+            sx=w-90; sy=LOGO_H//2
             self._status_x=sx; self._status_y=sy
-            bar.create_oval(sx-5,sy-5,sx+5,sy+5,fill=LIME,outline="",tags=("fg","status_dot"))
-            bar.create_text(sx+14,sy,text="Connected",font=F_SMALL,fill="#FFFFFF",anchor="w",tags="fg")
+            bar.create_oval(sx-4,sy-4,sx+4,sy+4,fill=SUCCESS,outline="",tags=("fg","status_dot"))
+            bar.create_text(sx+12,sy,text="Ready",font=F_CAPTION,
+                            fill=_lerp_color("#FFFFFF",ACCENT_END,0.15),anchor="w",tags="fg")
         bar.bind("<Configure>",_draw_gradient)
         self._logo_bar=bar
         self._pulse_status()
@@ -2350,41 +2402,42 @@ class App(tk.Tk):
             dot=bar.find_withtag("status_dot")
             if dot:
                 cur=bar.itemcget(dot[0],"fill")
-                nxt=LIME_LT if cur==LIME else LIME
+                bright=_lerp_color(SUCCESS,"#FFFFFF",0.4)
+                nxt=bright if cur==SUCCESS else SUCCESS
                 bar.itemconfig(dot[0],fill=nxt)
         except Exception: pass
         self.after(STATUS_PULSE_MS,self._pulse_status)
 
     def _build_toolbar(self):
-        tk.Frame(self,bg=CARD_BORDER,height=1).pack(fill="x")
-        tb=tk.Frame(self,bg=TOOLBAR,height=48); tb.pack(fill="x"); tb.pack_propagate(False)
+        tk.Frame(self,bg=DIVIDER,height=1).pack(fill="x")
+        tb=tk.Frame(self,bg=TOOLBAR,height=44); tb.pack(fill="x"); tb.pack_propagate(False)
         self._toolbar=tb
         self._tb_btns={}
-        items=[("search","\U0001F50D","Search"),("download","\U0001F4E5","Batch"),
-               ("playlist","\U0001F4CB","Playlist"),("converter","\U0001F504","Convert"),
-               ("player","\U0001F3B5","Player"),("analyze","\U0001F4CA","Analyze"),
-               ("stems","\U0001F39A","Stems"),("effects","\u2728","Effects"),
-               ("discovery","\U0001F30D","Library"),("samples","\U0001F3B6","Samples"),
-               ("editor","\u2702","Editor"),("recorder","\U0001F3A4","Record"),
-               ("spectrogram","\U0001F308","Spectro"),("pitchtime","\U0001F3B9","Pitch"),
-               ("remixer","\U0001F3A7","Remix"),("batch","\u2699","Batch"),
-               ("schedule","\u23F0","Schedule"),("history","\U0001F4DC","History"),
-               ("coverart","\U0001F5BC","Cover")]
+        items=[("search","\u2315","Search"),("download","\u2913","Batch"),
+               ("playlist","\u2630","Playlist"),("converter","\u21C4","Convert"),
+               ("player","\u25B6","Player"),("analyze","\u2261","Analyze"),
+               ("stems","\u2632","Stems"),("effects","\u2726","Effects"),
+               ("discovery","\u25CE","Library"),("samples","\u2B22","Samples"),
+               ("editor","\u2702","Editor"),("recorder","\u25CF","Record"),
+               ("spectrogram","\u2248","Spectro"),("pitchtime","\u266B","Pitch"),
+               ("remixer","\u2725","Remix"),("batch","\u2699","Batch"),
+               ("schedule","\u25F7","Schedule"),("history","\u21BA","History"),
+               ("coverart","\u25A3","Cover")]
         for name,icon,label in items:
             bf=tk.Frame(tb,bg=TOOLBAR,cursor="hand2")
-            bf.pack(side="left",padx=1,pady=(4,0))
-            il=tk.Label(bf,text=icon,font=("Segoe UI",11),bg=TOOLBAR,fg=TEXT_DIM)
-            il.pack(side="top",pady=(0,1))
-            nl=tk.Label(bf,text=label,font=("Segoe UI",7,"bold"),bg=TOOLBAR,fg=TEXT_DIM)
+            bf.pack(side="left",padx=2,pady=(3,0))
+            il=tk.Label(bf,text=icon,font=("Segoe UI Symbol",13),bg=TOOLBAR,fg=TEXT_DIM)
+            il.pack(side="top",pady=(0,0))
+            nl=tk.Label(bf,text=label,font=F_TAB,bg=TOOLBAR,fg=TEXT_DIM)
             nl.pack(side="top")
-            ind=tk.Frame(bf,bg=TOOLBAR,height=3); ind.pack(fill="x",side="bottom",pady=(2,0))
+            ind=tk.Frame(bf,bg=TOOLBAR,height=3); ind.pack(fill="x",side="bottom",pady=(1,0))
             self._tb_btns[name]=(bf,il,nl,ind)
             ToolTip(bf,f"Go to {label}")
             for w in (bf,il,nl):
                 w.bind("<Button-1>",lambda e,n=name:self._show_tab(n))
                 w.bind("<Enter>",lambda e,n=name:self._tb_hover(n,True))
                 w.bind("<Leave>",lambda e,n=name:self._tb_hover(n,False))
-        tk.Frame(self,bg=CARD_BORDER,height=1).pack(fill="x")
+        tk.Frame(self,bg=DIVIDER,height=1).pack(fill="x")
 
     def _tb_hover(self,name,entering):
         if name not in self._tb_btns: return
@@ -2437,14 +2490,14 @@ class App(tk.Tk):
         if hasattr(self,'_tb_btns'): self._update_tb_active()
 
     def _build_statusbar(self):
-        tk.Frame(self,bg=CARD_BORDER,height=1).pack(fill="x",side="bottom")
-        sb=tk.Frame(self,bg=BG,height=24); sb.pack(fill="x",side="bottom"); sb.pack_propagate(False)
-        self.status_lbl=tk.Label(sb,text="Ready  |  Ctrl+D: Download  Space: Play/Pause  Ctrl+O: Open Folder",font=F_STATUS,bg=BG,fg=TEXT_DIM,anchor="w")
-        self.status_lbl.pack(side="left",padx=8,fill="x",expand=True)
-        tk.Frame(sb,bg=CARD_BORDER,width=1).pack(side="left",fill="y",pady=4)
-        self.dl_count_lbl=tk.Label(sb,text=f"Downloads: {len(self.history)}",font=F_STATUS,bg=BG,fg=TEXT,padx=10)
+        tk.Frame(self,bg=DIVIDER,height=1).pack(fill="x",side="bottom")
+        sb=tk.Frame(self,bg=SURFACE_3,height=26); sb.pack(fill="x",side="bottom"); sb.pack_propagate(False)
+        self.status_lbl=tk.Label(sb,text="Ready  |  Ctrl+D: Download  Space: Play/Pause  Ctrl+O: Open Folder",font=F_STATUS,bg=SURFACE_3,fg=TEXT_DIM,anchor="w")
+        self.status_lbl.pack(side="left",padx=10,fill="x",expand=True)
+        tk.Frame(sb,bg=DIVIDER,width=1).pack(side="left",fill="y",pady=5)
+        self.dl_count_lbl=tk.Label(sb,text=f"\u2193 {len(self.history)}",font=F_STATUS,bg=SURFACE_3,fg=TEXT,padx=10)
         self.dl_count_lbl.pack(side="left")
-        tk.Frame(sb,bg=CARD_BORDER,width=1).pack(side="left",fill="y",pady=4)
+        tk.Frame(sb,bg=DIVIDER,width=1).pack(side="left",fill="y",pady=5)
         mod_map={"FFmpeg":HAS_FFMPEG,"BPM/Key":HAS_LIBROSA,"LUFS":HAS_LOUDNESS,
                  "Shazam":HAS_SHAZAM or HAS_SHAZAM_SEARCH,
                  "MusicBrainz":HAS_MB,"Chromaprint":HAS_ACOUSTID,"Demucs":HAS_DEMUCS,
@@ -2454,7 +2507,8 @@ class App(tk.Tk):
         loaded=sum(mod_map.values()); total=len(mod_map)
         missing=[k for k,v in mod_map.items() if not v]
         tip=f"Missing: {', '.join(missing)}" if missing else "All modules loaded"
-        mod_lbl=tk.Label(sb,text=f"\u25CF {loaded}/{total} modules",font=F_STATUS,bg=BG,fg=LIME if loaded>=total//2 else YELLOW,padx=10,cursor="hand2")
+        color=SUCCESS if loaded>=int(total*0.8) else WARNING if loaded>=int(total*0.5) else ERROR
+        mod_lbl=tk.Label(sb,text=f"\u25CF {loaded}/{total}",font=F_STATUS,bg=SURFACE_3,fg=color,padx=10,cursor="hand2")
         mod_lbl.pack(side="left")
         mod_lbl.bind("<Button-1>",lambda e:messagebox.showinfo("Module Status",
             "\n".join(f"{'\u2713' if v else '\u2717'} {k}" for k,v in mod_map.items())+"\n\n"+tip))
@@ -2463,7 +2517,7 @@ class App(tk.Tk):
     def toast(self,msg,level="info"): show_toast(self,msg,level)
     def add_history(self,entry):
         self.history.insert(0,entry); save_json(HISTORY_FILE,self.history[:HISTORY_MAX])
-        self.dl_count_lbl.config(text=f"Downloads: {len(self.history)}")
+        self.dl_count_lbl.config(text=f"\u2193 {len(self.history)}")
     def _open_dl_folder(self):
         os.makedirs(self.output_dir,exist_ok=True); open_folder(self.output_dir)
     def _toggle_dark_mode(self):
@@ -2502,9 +2556,7 @@ class App(tk.Tk):
                 widget.configure(bg=new_bg)
                 if wtype=="Labelframe":
                     try:
-                        old_fg=widget.cget("fg").lower()
-                        new_fg=_remap(old_fg) or TEXT
-                        widget.configure(fg=new_fg,highlightbackground=CARD_BORDER,highlightcolor=CARD_BORDER)
+                        widget.configure(bg=CARD_BG,fg=TEXT,highlightbackground=CARD_BORDER,highlightcolor=CARD_BORDER)
                     except Exception: pass
             elif wtype=="Label":
                 old_bg=widget.cget("bg").lower()
@@ -2516,14 +2568,15 @@ class App(tk.Tk):
                     if new_fg: widget.configure(fg=new_fg)
                 except Exception: pass
             elif wtype=="Checkbutton":
-                try: widget.configure(bg=BG,fg=TEXT,activebackground=BG,activeforeground=TEXT,selectcolor=INPUT_BG)
+                try: widget.configure(bg=BG,fg=TEXT,activebackground=BG,activeforeground=LIME,selectcolor=SURFACE_2)
                 except Exception: pass
             elif wtype=="Radiobutton":
-                try: widget.configure(bg=BG,fg=TEXT,activebackground=BG,activeforeground=TEXT,selectcolor=INPUT_BG)
+                try: widget.configure(bg=BG,fg=TEXT,activebackground=BG,activeforeground=LIME,selectcolor=SURFACE_2)
                 except Exception: pass
             elif wtype=="Entry":
-                try: widget.configure(bg=INPUT_BG,fg=TEXT,insertbackground=TEXT,
-                                      highlightbackground=INPUT_BORDER,highlightcolor=INPUT_FOCUS)
+                try: widget.configure(bg=INPUT_BG,fg=TEXT,insertbackground=LIME,
+                                      highlightbackground=INPUT_BORDER,highlightcolor=INPUT_FOCUS,
+                                      selectbackground=BLUE_HL,selectforeground="#FFFFFF")
                 except Exception: pass
             elif wtype=="Listbox":
                 try: widget.configure(bg=INPUT_BG,fg=TEXT,selectbackground=BLUE_HL,selectforeground="#FFFFFF")
@@ -2537,13 +2590,14 @@ class App(tk.Tk):
                 except Exception: pass
             elif wtype=="Canvas":
                 if isinstance(widget,ModernBtn):
-                    # Remap ModernBtn colors
                     new_bg=_remap(widget._bg_c)
                     new_fg=_remap(widget._fg_c)
                     new_hv=_remap(widget._hover_c)
                     if new_bg: widget._bg_c=new_bg; widget.itemconfig(widget._rect,fill=new_bg)
                     if new_fg: widget._fg_c=new_fg; widget.itemconfig(widget._label,fill=new_fg)
                     if new_hv: widget._hover_c=new_hv
+                    try: widget.itemconfig(widget._outline,outline=DIVIDER)
+                    except Exception: pass
                     # Update canvas bg to match parent
                     try:
                         pbg=widget.master.cget("bg") if hasattr(widget.master,"cget") else BG
@@ -2606,7 +2660,7 @@ class App(tk.Tk):
                 resp=requests.get("https://api.github.com/repos/Ccwilliams314/LimeWire/releases/latest",timeout=10)
                 if resp.status_code==200:
                     data=resp.json(); tag=data.get("tag_name","")
-                    current="v2.0.0"
+                    current="v2.0.1"
                     if tag and tag>current:
                         url=data.get("html_url","")
                         self.after(0,lambda:show_toast(self,f"Update available: {tag}\nVisit GitHub to download","warn",8000))

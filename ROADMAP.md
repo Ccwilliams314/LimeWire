@@ -54,6 +54,21 @@
 - [x] Localization: 6 languages (EN, ES, FR, DE, JA, PT)
 - [x] Community theme submissions via JSON
 
+## v2.0.1 — Visual Facelift — Shipped!
+- [x] Typography refresh (body 11pt, buttons 10pt, logo Segoe UI Black 22pt)
+- [x] 4 new theme tokens (BTN_PRESSED, CARD_SHADOW, DIVIDER, FOCUS_RING) across all 13 themes
+- [x] WCAG contrast fixes in Light, Classic, and High Contrast themes
+- [x] Smooth 3-step animated button hover transitions
+- [x] Buttons get visible backgrounds (SURFACE_2) and subtle outline ring
+- [x] GroupBox cards use distinct CARD_BG with thinner borders and refined accent stripe
+- [x] Themed ttk scrollbars (10px width, dark-matching colors)
+- [x] Monochrome Unicode toolbar icons (Segoe UI Symbol) replacing emoji
+- [x] Smoothstep gradient logo bar with lightning bolt icon and drop shadow title
+- [x] Compact status bar with SURFACE_3 background and semantic module colors
+- [x] Toast notifications with close button, tinted borders, and larger icons
+- [x] Thinner progress bars (8px) with new Thin variant (4px)
+- [x] Treeview rows taller (28px) with improved heading styling
+
 ## Future Ideas
 - [ ] Real-time collaborative mixing via WebSocket
 - [ ] AI-powered auto-mixing suggestions

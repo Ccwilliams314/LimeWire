@@ -4,7 +4,7 @@
   <br>
 </h1>
 
-<h3 align="center">v2.0 Studio Edition &mdash; The Modern Music Utility for Everything</h3>
+<h3 align="center">v2.0.1 Studio Edition &mdash; The Modern Music Utility for Everything</h3>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.10+-blue?style=flat-square&logo=python" alt="Python">
@@ -53,7 +53,8 @@ LimeWire is a **19-tab all-in-one audio production studio** built with Python an
 - **Keyboard customization** &mdash; rebind any shortcut, arrow key seeking
 - **6 languages** &mdash; English, Spanish, French, German, Japanese, Portuguese
 - **13 themes** &mdash; including High Contrast for accessibility + community theme loading
-- **Modern UI** with rounded buttons, gradient header, command palette, live themes
+- **Modern UI** with smooth animated buttons, smoothstep gradient header, command palette, live themes
+- **Visual polish** &mdash; themed scrollbars, monochrome toolbar icons, card elevation, smooth hover transitions
 
 ---
 
@@ -145,7 +146,7 @@ pip install tkinterdnd2
 pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm musicbrainzngs pyacoustid demucs pydub sounddevice pyrubberband openai-whisper pedalboard
 ```
 
-> The status bar (bottom-right) shows module count (e.g., `12/14 modules`). Click it to see what's missing.
+> The status bar shows module count (e.g., `● 12/14`). Click it to see what's missing.
 
 ---
 
@@ -206,7 +207,7 @@ pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm m
 
 ## Themes
 
-12 built-in themes with **live switching** (no restart required):
+13 built-in themes with **live switching** (no restart required):
 
 | Theme | Style |
 |-------|-------|
@@ -222,23 +223,31 @@ pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm m
 | **LimeWire Classic** | Original lime green nostalgia |
 | **Nord** | Arctic blue-grey, muted tones |
 | **Gruvbox** | Warm retro brown/orange/green |
+| **High Contrast** | Maximum contrast for accessibility |
+
+Each theme includes 37 semantic color tokens (BG, TEXT, LIME, SUCCESS, WARNING, ERROR, DIVIDER, FOCUS_RING, etc.) for consistent styling across all 19 tabs.
 
 Switch via: **Tools > Cycle Theme** or **Ctrl+K > type "theme"**
+
+Load community themes via: **Tools > Load Community Theme** (JSON format)
 
 ---
 
 ## Architecture
 
-Single-file application (`~5,500 lines`):
+Single-file application (`~7,000 lines`):
 
 ```
 LimeWire.py
 ├── Imports & dependency detection (HAS_LIBROSA, HAS_DEMUCS, etc.)
-├── Theme system (12 palettes, semantic tokens, apply_theme())
-├── Font system (Segoe UI, Cascadia Code, heading hierarchy)
+├── Platform detection (IS_WINDOWS, IS_MACOS, IS_LINUX)
+├── Theme system (13 palettes, 37 semantic tokens, apply_theme())
+├── Localization (6 languages, _t() i18n system)
+├── Plugin system (PluginBase, PluginManager)
+├── Font system (Segoe UI, Cascadia Code, 14-level heading hierarchy)
 ├── Utility functions (audio loading, waveform, spectrogram, pitch/time)
-├── Modern widget system (ModernBtn, ToolTip, ToastManager, CommandPalette)
-├── 18 Page classes (all extend ScrollFrame)
+├── Modern widget system (ModernBtn with animated transitions, ToolTip, ToastManager, CommandPalette)
+├── 19 Page classes (all extend ScrollFrame)
 ├── App class (tk.Tk) — window, menubar, logo bar, toolbar, notebook, statusbar
 └── Launch block
 ```
@@ -260,19 +269,21 @@ LimeWire.py
 ## Highlights
 
 ### Modern UI
-- Canvas-based **rounded buttons** with hover/press animations
-- **Gradient logo bar** with pill-shaped version badge
-- **Icon + label toolbar** with active tab indicator
-- **Segoe UI** typography across all themes
-- Professional **color palettes** with semantic tokens (success/warning/error)
-- **Spacing constants** system for consistent layout
+- Canvas-based **rounded buttons** with smooth 3-step hover transitions and press animations
+- **Smoothstep gradient logo bar** with lightning bolt icon, drop shadow title, outlined version badge
+- **Monochrome symbol toolbar** (Segoe UI Symbol) with active tab indicator
+- **Segoe UI** typography with 14-level hierarchy (8pt caption to 26pt heading)
+- **Themed scrollbars** (10px ttk) matching each theme's palette
+- Professional **color palettes** with 37 semantic tokens (success/warning/error/divider/focus)
+- **Card elevation** with distinct CARD_BG, thin borders, and accent stripes
+- **Spacing constants** system (XS/SM/MD/LG/XL/2XL) for consistent layout
 
 ### UX Infrastructure
 - **Command Palette** (`Ctrl+K`) &mdash; fuzzy search pages, history, and library
-- **Tooltips** on toolbar buttons
-- **Toast notification queue** &mdash; stacks up to 4, severity colors
-- **Shortcut Registry** with `Ctrl+?` help dialog
-- **Live theme switching** &mdash; 12 themes, no restart required
+- **Tooltips** on toolbar buttons (300ms delay, themed background)
+- **Toast notifications** &mdash; stacks up to 4, close button, severity colors, slide-in animation
+- **Shortcut Registry** with `Ctrl+?` help dialog and customization
+- **Live theme switching** &mdash; 13 themes, no restart required
 - **Dark title bar** &mdash; Windows DWM API matches theme
 - **Drag-and-drop** &mdash; drop audio files onto any tab
 - **Recent files menu** &mdash; File > Recent Files (persisted)
@@ -311,14 +322,16 @@ LimeWire.py
 
 ```
 LimeWire/
-├── LimeWire.py                              # Main application
+├── LimeWire.py                              # Main application (~7,000 lines)
 ├── README.md                                # This file
+├── CHANGELOG.md                             # Version history
+├── ROADMAP.md                               # Feature roadmap
 ├── LimeWire_v1.0_Operation_Manual.pdf       # 43-page operation manual
 └── screenshots/                             # App screenshots (19 tabs)
     ├── 01_search.png
     ├── 02_download.png
     ├── ...
-    └── 18_history.png
+    └── 19_coverart.png
 ```
 
 ---
