@@ -7278,6 +7278,9 @@ if __name__=="__main__":
         if hp:
             try: hp.tree.delete(*hp.tree.get_children())
             except Exception: pass
+        # Force a fixed window size so screenshots don't include the OS taskbar
+        app.state("normal")
+        app.geometry("960x820+50+30")
         app.update_idletasks(); app.update()
         time.sleep(1.5)
         _tabs=[("search","01_search"),("download","02_download"),("playlist","03_playlist"),
