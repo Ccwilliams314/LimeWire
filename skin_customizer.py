@@ -531,7 +531,7 @@ class SkinCustomizer(tk.Tk):
         c.create_text(pad + 16, y + bar_h // 2, text="LimeWire Studio Edition",
                       font=("Segoe UI Semibold", 16), fill="#FFFFFF", anchor="w")
         c.create_text(w - pad - 16, y + bar_h // 2, text="v2.0.2",
-                      font=("Segoe UI", 10), fill="#FFFFFFBB", anchor="e")
+                      font=("Segoe UI", 10), fill="#CCCCCC", anchor="e")
         y += bar_h + 12
 
         # ── Toolbar ──
