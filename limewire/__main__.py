@@ -41,7 +41,7 @@ def _run_screenshots():
         pp._playlist = []
         pp._playlist_set = set()
         try:
-            pp.plb.delete(0, "end")
+            pp.plb.delete(*pp.plb.get_children())
         except Exception:
             pass
     hp = app.pages.get("history")

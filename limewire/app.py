@@ -119,7 +119,11 @@ class App(tk.Tk):
                 if os.path.exists(path) and path not in pp._playlist_set:
                     pp._playlist.append(path)
                     pp._playlist_set.add(path)
-                    pp.plb.insert("end", os.path.basename(path))
+                    title, artist, dur_str = pp._get_track_meta(path)
+                    pp.plb.insert("", "end",
+                                  iid=str(len(pp._playlist) - 1),
+                                  values=(title, artist, dur_str))
+            pp._update_playlist_count()
         tab = session.get("active_tab", "")
         if tab:
             self.after(100, lambda: self._show_tab(tab))
@@ -370,7 +374,10 @@ class App(tk.Tk):
                 if pp and path not in pp._playlist_set:
                     pp._playlist.append(path)
                     pp._playlist_set.add(path)
-                    pp.plb.insert("end", os.path.basename(path))
+                    title, artist, dur_str = pp._get_track_meta(path)
+                    pp.plb.insert("", "end",
+                                  iid=str(len(pp._playlist) - 1),
+                                  values=(title, artist, dur_str))
                 self._show_tab("player")
 
     # ── Recent files ─────────────────────────────────────────────────────────
@@ -417,7 +424,10 @@ class App(tk.Tk):
             if pp and path not in pp._playlist_set:
                 pp._playlist.append(path)
                 pp._playlist_set.add(path)
-                pp.plb.insert("end", os.path.basename(path))
+                title, artist, dur_str = pp._get_track_meta(path)
+                pp.plb.insert("", "end",
+                              iid=str(len(pp._playlist) - 1),
+                              values=(title, artist, dur_str))
             self._show_tab("player")
 
     # ── Menu bar ─────────────────────────────────────────────────────────────

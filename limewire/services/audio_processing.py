@@ -11,6 +11,7 @@ from limewire.core.deps import (
 from limewire.core.constants import (
     WAVEFORM_W, WAVEFORM_H,
     SPECTROGRAM_FFT, SPECTROGRAM_HOP, SPECTROGRAM_CMAP,
+    FREQ_PROFILE_HOP, FREQ_PROFILE_BANDS,
 )
 
 
@@ -41,6 +42,38 @@ def generate_waveform_data(filepath, width=WAVEFORM_W, height=WAVEFORM_H):
         return bars[:width]
     except Exception:
         return []
+
+
+def compute_frequency_profile(filepath, n_bands=FREQ_PROFILE_BANDS,
+                               hop_duration=FREQ_PROFILE_HOP):
+    """Pre-compute per-frame frequency band energies for EQ visualization.
+
+    Returns (times, bands) where times is array of timestamps and
+    bands is list of arrays, each with n_bands floats (0-1 normalized).
+    Returns (None, None) if librosa unavailable or on error.
+    """
+    if not _ensure_librosa() or not HAS_NUMPY:
+        return None, None
+    import limewire.core.deps as _d
+    librosa = _d.librosa
+    try:
+        y, sr = librosa.load(filepath, sr=22050, mono=True)
+        hop_len = int(sr * hop_duration)
+        S = np.abs(librosa.stft(y, n_fft=2048, hop_length=hop_len))
+        # Create mel filterbank and apply
+        mel_fb = librosa.filters.mel(sr=sr, n_fft=2048, n_mels=n_bands)
+        mel_S = mel_fb @ S  # (n_bands, n_frames)
+        # Convert to dB and normalize per-band to 0-1
+        mel_db = librosa.amplitude_to_db(mel_S, ref=np.max)
+        # Normalize: map [-80, 0] dB to [0, 1]
+        mel_norm = np.clip((mel_db + 80) / 80, 0, 1)
+        times = librosa.frames_to_time(np.arange(mel_norm.shape[1]),
+                                        sr=sr, hop_length=hop_len)
+        # Transpose so bands[frame_idx] = array of n_bands values
+        bands = mel_norm.T.tolist()
+        return times.tolist(), bands
+    except Exception:
+        return None, None
 
 
 # ── Demucs stem separation ───────────────────────────────────────────────────

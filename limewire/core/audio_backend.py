@@ -42,6 +42,11 @@ class AudioPlayer:
         if self._player:
             self._player.volume = v
 
+    def set_speed(self, rate):
+        """Set playback speed via pyglet pitch. 1.0 = normal."""
+        if self._player:
+            self._player.pitch = rate
+
     def get_busy(self):
         return self._player.playing if self._player else False
 

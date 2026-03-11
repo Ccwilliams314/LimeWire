@@ -15,6 +15,8 @@ WAVEFORM_W = 600
 WAVEFORM_H = 80
 PLAYER_WAVEFORM_W = 500
 PLAYER_WAVEFORM_H = 50
+FREQ_PROFILE_HOP = 0.05
+FREQ_PROFILE_BANDS = 32
 LOGO_BAR_HEIGHT = 48
 
 # ── Limits ────────────────────────────────────────────────────────────────────

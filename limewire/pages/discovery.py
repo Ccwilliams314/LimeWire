@@ -333,7 +333,11 @@ class DiscoveryPage(ScrollFrame):
         for fp in self._playlist_files:
             if fp not in pp._playlist_set:
                 pp._playlist.append(fp); pp._playlist_set.add(fp)
-                pp.plb.insert("end", os.path.basename(fp)); added += 1
+                title, artist, dur_str = pp._get_track_meta(fp)
+                pp.plb.insert("", "end",
+                              iid=str(len(pp._playlist) - 1),
+                              values=(title, artist, dur_str))
+                added += 1
         if added:
             show_toast(self.app, f"Added {added} tracks to Player", "success")
         self.app._show_tab("player")

@@ -251,7 +251,10 @@ class CommandPalette(tk.Toplevel):
                         if f not in pp._playlist_set:
                             pp._playlist.append(f)
                             pp._playlist_set.add(f)
-                            pp.plb.insert("end", os.path.basename(f))
+                            title, artist, dur_str = pp._get_track_meta(f)
+                            pp.plb.insert("", "end",
+                                          iid=str(len(pp._playlist) - 1),
+                                          values=(title, artist, dur_str))
                         app._show_tab("player")
 
                 self._commands.append(
