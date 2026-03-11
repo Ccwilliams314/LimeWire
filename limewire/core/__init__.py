@@ -1,0 +1,1 @@
+# limewire.core — foundation layer
