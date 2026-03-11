@@ -1,4 +1,4 @@
-name: Syntax Check
+name: CI
 
 on:
   push:
@@ -22,8 +22,49 @@ jobs:
           python-version: ${{ matrix.python-version }}
           allow-prereleases: true
 
-      - name: Syntax check
+      - name: Syntax check — LimeWire.py
         run: python -c "import py_compile; py_compile.compile('LimeWire.py', doraise=True)"
 
-      - name: Import check
+      - name: Syntax check — skin_customizer.py
+        run: python -c "import py_compile; py_compile.compile('skin_customizer.py', doraise=True)"
+
+      - name: Syntax check — limewire package
+        run: |
+          python -c "
+          import py_compile, pathlib
+          errors = []
+          for f in sorted(pathlib.Path('limewire').rglob('*.py')):
+              try:
+                  py_compile.compile(str(f), doraise=True)
+              except py_compile.PyCompileError as e:
+                  errors.append(str(e))
+          if errors:
+              for e in errors: print(e)
+              raise SystemExit(f'{len(errors)} file(s) failed syntax check')
+          print(f'All {len(list(pathlib.Path(\"limewire\").rglob(\"*.py\")))} package files OK')
+          "
+
+      - name: AST parse — LimeWire.py
         run: python -c "import ast; ast.parse(open('LimeWire.py').read()); print('AST parse OK')"
+
+  test:
+    runs-on: ubuntu-latest
+    needs: check
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          allow-prereleases: true
+
+      - name: Install test dependencies
+        run: pip install pytest
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v --tb=short

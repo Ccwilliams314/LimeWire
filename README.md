@@ -1,366 +1,359 @@
-<h1 align="center">
-  <br>
-  LimeWire
-  <br>
-</h1>
+<div align="center">
 
-<h3 align="center">v2.0.2 Studio Edition &mdash; The Modern Music Utility for Everything</h3>
+<!-- Logo / Hero -->
+<img src="screenshots/01_search.png" width="720" alt="LimeWire Studio Edition">
 
-<p align="center">
-  <img src="https://img.shields.io/badge/python-3.10+-blue?style=flat-square&logo=python" alt="Python">
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-0078D6?style=flat-square&logo=windows" alt="Cross-Platform">
-  <img src="https://img.shields.io/badge/tabs-20-2ECC71?style=flat-square" alt="20 Tabs">
-  <img src="https://img.shields.io/badge/themes-13-purple?style=flat-square" alt="13 Themes">
-  <img src="https://img.shields.io/badge/languages-6-orange?style=flat-square" alt="6 Languages">
-  <img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License">
-</p>
+<br>
 
-<p align="center">
-  <strong>Download. Play. Analyze. Edit. Separate. Remix. Process. All in one app.</strong>
-</p>
+# LimeWire Studio Edition
 
-<p align="center">
-  <img src="screenshots/01_search.png" width="700" alt="LimeWire Search & Grab">
-</p>
+### The Swiss Army Knife of Audio Production
+
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+[![License: MIT](https://img.shields.io/github/license/Ccwilliams314/LimeWire?style=for-the-badge&color=2ECC71)](LICENSE)
+[![GitHub Stars](https://img.shields.io/github/stars/Ccwilliams314/LimeWire?style=for-the-badge&color=FFD600&logo=github)](https://github.com/Ccwilliams314/LimeWire/stargazers)
+[![Latest Release](https://img.shields.io/github/v/release/Ccwilliams314/LimeWire?style=for-the-badge&color=00E5FF)](https://github.com/Ccwilliams314/LimeWire/releases)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/Ccwilliams314/LimeWire/check.yml?style=flat-square&label=CI&logo=github)](https://github.com/Ccwilliams314/LimeWire/actions)
+[![Issues](https://img.shields.io/github/issues/Ccwilliams314/LimeWire?style=flat-square&color=FF1744)](https://github.com/Ccwilliams314/LimeWire/issues)
+![20 Tabs](https://img.shields.io/badge/tabs-20-2ECC71?style=flat-square)
+![13 Themes](https://img.shields.io/badge/themes-13-BD93F9?style=flat-square)
+![6 Languages](https://img.shields.io/badge/languages-6-FF9E64?style=flat-square)
+![185 Tests](https://img.shields.io/badge/tests-185-00E676?style=flat-square)
+
+**Download &bull; Play &bull; Analyze &bull; Edit &bull; Separate &bull; Remix &bull; Process**
+
+[Getting Started](#-quick-start) &bull; [Features](#-features) &bull; [Screenshots](#-screenshots) &bull; [Themes](#-themes) &bull; [Architecture](#-architecture)
+
+</div>
 
 ---
 
 ## What is LimeWire?
 
-LimeWire is a **20-tab all-in-one audio production studio** built with Python and tkinter. It started as a simple YouTube downloader and evolved into a comprehensive music utility covering the entire audio workflow &mdash; from downloading and converting, to analysis, editing, stem separation, remixing, and batch processing.
+A **20-tab all-in-one audio production studio** built with Python and tkinter. From simple YouTube downloads to AI-powered stem separation, professional audio analysis, non-destructive editing, and batch processing — all in a single app with 13 themes and 6 languages.
 
-### Key Highlights
+### Headline Features
 
-- **Download from 1000+ sites** via yt-dlp (YouTube, Spotify, SoundCloud, Bandcamp, etc.)
-- **AI stem separation** with Demucs (vocals, drums, bass, other, piano, guitar)
-- **Audio analysis** &mdash; BPM, key, Camelot notation, loudness (LUFS), waveform
-- **Track identification** &mdash; Shazam, MusicBrainz, Chromaprint, Apple Music
-- **Non-destructive editor** with undo/redo, waveform selection
-- **Microphone recording** with Whisper AI transcription
-- **Stem remixer** &mdash; mix individual stems with volume, pan, mute/solo
-- **Batch processor** &mdash; normalize, convert, fade, trim silence across many files
-- **Smart playlists** with energy filtering and harmonic key matching
-- **Cover art manager** &mdash; view, add, fetch (iTunes/MusicBrainz), batch-apply album artwork
-- **Plugin system** &mdash; load custom audio processors from `~/.limewire/plugins/`
-- **VST3/AU hosting** &mdash; load VST3 plugins directly in the effects chain
-- **MIDI controller mapping** &mdash; MIDI Learn in Remixer for hardware fader control
-- **SoundCloud/Bandcamp search** &mdash; type `sc:query` or `bc:query` to search
-- **Discord Rich Presence** &mdash; show currently playing track in Discord
-- **Collaborative playlists** &mdash; share and import playlists via JSON
-- **Analysis image cards** &mdash; export BPM/key/loudness as shareable PNG
-- **Cloud sync** &mdash; export/import settings to Dropbox/OneDrive/Google Drive
-- **Auto-update** &mdash; check for new releases from GitHub
-- **Keyboard customization** &mdash; rebind any shortcut, arrow key seeking
-- **6 languages** &mdash; English, Spanish, French, German, Japanese, Portuguese
-- **13 themes** &mdash; including High Contrast for accessibility + community theme loading
-- **Modern UI** with smooth animated buttons, smoothstep gradient header, command palette, live themes
-- **Settings tab** &mdash; theme selector, download folder, proxy, rate limit, clipboard watch, Discord RPC
-- **Visual polish** &mdash; themed scrollbars, emoji toolbar icons, card elevation, smooth hover transitions
+| | Feature | What it does |
+|---|---------|-------------|
+| :arrow_down: | **1000+ Site Downloads** | YouTube, Spotify, SoundCloud, Bandcamp via yt-dlp |
+| :brain: | **AI Stem Separation** | Vocals, drums, bass, guitar, piano via Demucs |
+| :bar_chart: | **Audio Analysis** | BPM, key, Camelot, LUFS, waveform, spectrogram |
+| :mag: | **Track Identification** | Shazam, MusicBrainz, Chromaprint, Apple Music |
+| :scissors: | **Non-Destructive Editor** | Cut, trim, fade, merge with full undo/redo |
+| :microphone: | **Recording + Whisper** | Mic capture with AI transcription and SRT export |
+| :control_knobs: | **Effects Chain** | Gain, compressor, reverb, delay, chorus, filters |
+| :musical_score: | **Stem Remixer** | Per-stem volume, pan, mute/solo mixing console |
+| :zap: | **Batch Processor** | Normalize, convert, fade, trim silence at scale |
+| :art: | **13 Live Themes** | Switch instantly — no restart, includes custom theme loader |
 
 ---
 
-## Screenshots
+## :rocket: Quick Start
+
+```bash
+# Prerequisites: Python 3.10+ and FFmpeg on PATH
+winget install ffmpeg
+
+# Core install (download + playback)
+pip install yt-dlp pillow requests mutagen pyglet
+
+# Launch
+python LimeWire.py
+# or: python -m limewire
+```
 
 <details>
-<summary><strong>Click to expand all 20 tabs</strong></summary>
+<summary><strong>Optional modules — install only what you need</strong></summary>
 
-| Tab | Screenshot |
-|-----|-----------|
-| **Search & Grab** | <img src="screenshots/01_search.png" width="600"> |
-| **Batch Download** | <img src="screenshots/02_download.png" width="600"> |
-| **Playlist** | <img src="screenshots/03_playlist.png" width="600"> |
-| **Converter** | <img src="screenshots/04_converter.png" width="600"> |
-| **Player** | <img src="screenshots/05_player.png" width="600"> |
-| **Analyze** | <img src="screenshots/06_analyze.png" width="600"> |
-| **Stems** | <img src="screenshots/07_stems.png" width="600"> |
-| **Effects** | <img src="screenshots/08_effects.png" width="600"> |
-| **Discovery** | <img src="screenshots/09_discovery.png" width="600"> |
-| **Samples** | <img src="screenshots/10_samples.png" width="600"> |
-| **Editor** | <img src="screenshots/11_editor.png" width="600"> |
-| **Recorder** | <img src="screenshots/12_recorder.png" width="600"> |
-| **Spectrogram** | <img src="screenshots/13_spectrogram.png" width="600"> |
-| **Pitch/Time** | <img src="screenshots/14_pitchtime.png" width="600"> |
-| **Remixer** | <img src="screenshots/15_remixer.png" width="600"> |
-| **Batch Process** | <img src="screenshots/16_batch.png" width="600"> |
-| **Scheduler** | <img src="screenshots/17_schedule.png" width="600"> |
-| **History** | <img src="screenshots/18_history.png" width="600"> |
-| **Cover Art** | <img src="screenshots/19_coverart.png" width="600"> |
-| **Settings** | <img src="screenshots/20_settings.png" width="600"> |
+```bash
+pip install librosa soundfile pyloudnorm   # BPM/key/loudness analysis
+pip install musicbrainzngs pyacoustid      # Track identification
+pip install shazamio                       # Shazam (Python <=3.12)
+pip install demucs                         # AI stem separation (needs PyTorch)
+pip install pydub sounddevice pyrubberband # Editing & recording
+pip install openai-whisper                 # Whisper transcription
+pip install pedalboard                     # Audio effects (Spotify)
+pip install pyflp                          # FL Studio integration
+pip install tkinterdnd2                    # Drag & drop
+```
+
+**All-in-one:**
+```bash
+pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm musicbrainzngs pyacoustid demucs pydub sounddevice pyrubberband openai-whisper pedalboard
+```
+
+> The status bar shows module count (e.g., `12/14`). Click it to see what's missing.
+
+</details>
+
+### Windows One-Click Setup
+
+```bash
+# Run the automated installer
+setup.bat
+```
+
+---
+
+## :camera: Screenshots
+
+<details open>
+<summary><strong>All 20 tabs</strong></summary>
+
+<table>
+<tr>
+<td width="50%"><strong>Search & Grab</strong><br><img src="screenshots/01_search.png" width="100%"></td>
+<td width="50%"><strong>Batch Download</strong><br><img src="screenshots/02_download.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Playlist</strong><br><img src="screenshots/03_playlist.png" width="100%"></td>
+<td><strong>Converter</strong><br><img src="screenshots/04_converter.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Player</strong><br><img src="screenshots/05_player.png" width="100%"></td>
+<td><strong>Analyze</strong><br><img src="screenshots/06_analyze.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Stems (AI)</strong><br><img src="screenshots/07_stems.png" width="100%"></td>
+<td><strong>Effects</strong><br><img src="screenshots/08_effects.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Discovery</strong><br><img src="screenshots/09_discovery.png" width="100%"></td>
+<td><strong>Samples</strong><br><img src="screenshots/10_samples.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Editor</strong><br><img src="screenshots/11_editor.png" width="100%"></td>
+<td><strong>Recorder</strong><br><img src="screenshots/12_recorder.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Spectrogram</strong><br><img src="screenshots/13_spectrogram.png" width="100%"></td>
+<td><strong>Pitch/Time</strong><br><img src="screenshots/14_pitchtime.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Remixer</strong><br><img src="screenshots/15_remixer.png" width="100%"></td>
+<td><strong>Batch Process</strong><br><img src="screenshots/16_batch.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Scheduler</strong><br><img src="screenshots/17_schedule.png" width="100%"></td>
+<td><strong>History</strong><br><img src="screenshots/18_history.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Cover Art</strong><br><img src="screenshots/19_coverart.png" width="100%"></td>
+<td><strong>Settings</strong><br><img src="screenshots/20_settings.png" width="100%"></td>
+</tr>
+</table>
 
 </details>
 
 ---
 
-## Installation
-
-### Prerequisites
-
-- **Python 3.10+** (tested with 3.14)
-- **FFmpeg** on PATH
-
-### Quick Start
-
-```bash
-# 1. Install FFmpeg
-winget install ffmpeg
-
-# 2. Install core dependencies
-pip install yt-dlp pillow requests mutagen pyglet
-
-# 3. Run
-python LimeWire.py
-```
-
-### Optional Modules
-
-Install only what you need:
-
-```bash
-# Audio analysis (BPM, key, loudness)
-pip install librosa soundfile pyloudnorm
-
-# Track identification
-pip install musicbrainzngs pyacoustid
-pip install shazamio  # Python 3.12 or earlier only
-
-# AI stem separation (requires PyTorch)
-pip install demucs
-
-# Audio editing & recording
-pip install pydub sounddevice pyrubberband
-
-# Whisper transcription
-pip install openai-whisper
-
-# Audio effects
-pip install pedalboard
-
-# DJ integration
-pip install pyflp
-
-# Drag & drop support
-pip install tkinterdnd2
-```
-
-### All-in-One Install
-
-```bash
-pip install yt-dlp pillow requests mutagen pyglet librosa soundfile pyloudnorm musicbrainzngs pyacoustid demucs pydub sounddevice pyrubberband openai-whisper pedalboard
-```
-
-> The status bar shows module count (e.g., `● 12/14`). Click it to see what's missing.
-
----
-
-## Features
+## :sparkles: Features
 
 ### Download & Library
 
-| Feature | Description |
-|---------|-------------|
-| **Search & Grab** | Paste URL, auto-detect source, download in any format (MP3/WAV/FLAC/OGG/M4A/AAC/OPUS) |
-| **Batch Download** | Queue multiple URLs, persistent queue, retry failed downloads |
-| **Playlist Download** | Fetch YouTube playlists, select individual tracks, batch download |
-| **Converter** | Convert between audio formats with ffmpeg, preserves metadata |
-| **History** | Complete download log with search, replay, and management |
-| **Scheduler** | Schedule downloads for specific times, background polling |
+| Tab | Capabilities |
+|-----|-------------|
+| **Search & Grab** | Paste any URL, auto-detect source, choose format (MP3/WAV/FLAC/OGG/M4A/AAC/OPUS), quality selector |
+| **Batch Download** | Queue multiple URLs, persistent queue, retry failed, progress tracking |
+| **Playlist** | YouTube playlist fetch, individual track selection, batch download |
+| **Converter** | Format conversion via ffmpeg, metadata preservation |
+| **History** | Searchable download log with replay and management |
+| **Scheduler** | Schedule downloads for specific times with background polling |
 | **Cover Art** | View, add, fetch (iTunes/MusicBrainz), batch-apply album artwork |
-| **Settings** | Theme selector, download folder, proxy, rate limit, clipboard watch, Discord RPC |
 
 ### Playback & Analysis
 
-| Feature | Description |
-|---------|-------------|
+| Tab | Capabilities |
+|-----|-------------|
 | **Player** | Waveform display, EQ spectrum, album art, speed control, A-B loop, crossfade, M3U playlists |
-| **Analyze** | BPM, key, Camelot, LUFS, true peak, waveform. Shazam/MusicBrainz/Chromaprint/Apple Music ID |
-| **Loudness Targeting** | Platform presets (Spotify/YouTube/Apple Music/CD/Club/Podcast), 2-pass ffmpeg loudnorm |
-| **Discovery** | Library scanner with BPM/key caching, harmonic mixing, smart playlists with energy filter |
-| **Spectrogram** | Linear/Mel/CQT spectrograms with viridis/magma/plasma/inferno colormaps, PNG export |
+| **Analyze** | BPM, key, Camelot, LUFS, true peak. Shazam/MusicBrainz/Chromaprint/Apple Music identification |
+| **Discovery** | Library scanner, BPM/key caching, harmonic mixing suggestions, smart playlists, CSV export |
+| **Spectrogram** | Linear/Mel/CQT with viridis/magma/plasma/inferno colormaps, PNG export |
 
 ### Production & Editing
 
-| Feature | Description |
-|---------|-------------|
-| **Stems** | AI separation via Demucs (htdemucs, htdemucs_ft, mdx_extra). Vocals, drums, bass, other, piano, guitar |
-| **Remixer** | Mix separated stems: per-stem volume (0-150%), pan (L-R), mute/solo. Preview and export |
-| **Editor** | Non-destructive trim/cut/fade/merge with full undo/redo stack and waveform selection |
-| **Recorder** | Mic recording with VU meter, live waveform, Whisper AI transcription, SRT export |
-| **Pitch/Time** | Pitch shift (semitones), time stretch (rate), BPM auto-detect, vocal isolation |
-| **Effects** | Pedalboard effects chain: gain, compressor, limiter, reverb, delay, chorus, filters |
-| **Batch Process** | Bulk: normalize LUFS, convert format, fade in/out, trim silence, strip metadata |
+| Tab | Capabilities |
+|-----|-------------|
+| **Stems** | AI separation via Demucs (htdemucs, htdemucs_ft, mdx_extra) — vocals, drums, bass, other, piano, guitar |
+| **Remixer** | Mix stems: per-stem volume (0-150%), pan (L-R), mute/solo, preview, export |
+| **Editor** | Non-destructive trim/cut/fade/merge, undo/redo, waveform selection, 32x zoom |
+| **Recorder** | Mic recording, VU meter, live waveform, Whisper AI transcription, SRT export |
+| **Pitch/Time** | Pitch shift (semitones), time stretch, BPM auto-detect, vocal isolation |
+| **Effects** | Pedalboard chain: gain, compressor, limiter, reverb, delay, chorus, filters. Save/load presets |
+| **Batch Process** | Bulk normalize LUFS, convert format, fade in/out, trim silence, strip metadata |
 | **Samples** | Freesound.org browser with preview and download |
+
+### Settings & Customization
+
+- **13 built-in themes** with instant live switching (no restart)
+- **Community theme loader** — load custom JSON themes via Tools menu
+- **Skin Customizer** (`skin_customizer.py`) — visual theme editor with live preview
+- **6 languages** — English, Spanish, French, German, Japanese, Portuguese
+- **Plugin system** — SHA-256 hash-trusted custom audio processors
+- **VST3/AU hosting** — load VST3 plugins in the effects chain
+- **MIDI Learn** — map hardware controllers in the Remixer
+- **Discord Rich Presence** — show currently playing track
+- **Cloud sync** — export/import settings to Dropbox/OneDrive/Google Drive
 
 ---
 
-## Keyboard Shortcuts
+## :keyboard: Keyboard Shortcuts
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+K` | Command Palette (fuzzy search pages, history, library) |
+| `Ctrl+K` | Command Palette — fuzzy search pages, history, library |
 | `Ctrl+D` | Download / Grab URL |
 | `Ctrl+O` | Open downloads folder |
 | `Space` | Play / Pause |
-| `Ctrl+Right` | Next track |
-| `Ctrl+Left` | Previous track |
-| `Ctrl+Up/Down` | Volume up/down |
+| `Ctrl+Right/Left` | Next / Previous track |
+| `Ctrl+Up/Down` | Volume up / down |
 | `Shift+Escape` | Quick close |
 | `Ctrl+?` | Show shortcuts dialog |
 
 ---
 
-## Themes
+## :art: Themes
 
-13 built-in themes with **live switching** (no restart required):
+13 built-in themes with **instant live switching** — no restart required:
 
-| Theme | Style |
-|-------|-------|
-| **LiveWire** (default) | Electric cyan/blue, dark navy background |
-| **Classic Light** | Warm neutrals, soft green accents |
-| **Classic Dark** | Rich dark, green accents |
-| **Modern Dark** | GitHub-inspired, high contrast |
-| **Synthwave** | Neon pink/purple, retro aesthetic |
-| **Dracula** | Purple/cyan/green, popular dev theme |
-| **Catppuccin** | Pastel tones, easy on the eyes |
-| **Tokyo Night** | Blue-tinted dark, calm palette |
-| **Spotify** | Green accents on dark background |
-| **LimeWire Classic** | Original lime green nostalgia |
-| **Nord** | Arctic blue-grey, muted tones |
-| **Gruvbox** | Warm retro brown/orange/green |
-| **High Contrast** | Maximum contrast for accessibility |
+| Theme | Preview |
+|-------|---------|
+| **LiveWire** (default) | Electric cyan on dark navy |
+| **Light** | Clean white, green accents |
+| **Dark** | Rich dark, green accents |
+| **Modern** | GitHub-inspired, high contrast |
+| **Synthwave** | Neon pink/purple retro |
+| **Dracula** | Purple/pink, dev favorite |
+| **Catppuccin** | Soft pastels, easy on the eyes |
+| **Tokyo Night** | Blue-tinted calm palette |
+| **Spotify** | Green on black |
+| **Classic** | OG lime green nostalgia |
+| **Nord** | Arctic blue-grey |
+| **Gruvbox** | Warm retro earth tones |
+| **High Contrast** | Maximum accessibility |
 
-Each theme includes 37 semantic color tokens (BG, TEXT, LIME, SUCCESS, WARNING, ERROR, DIVIDER, FOCUS_RING, etc.) for consistent styling across all 20 tabs.
+Each theme defines **37 semantic color tokens** (backgrounds, text, accents, borders, cards, states, surfaces, focus rings) for pixel-perfect consistency across all 20 tabs.
 
-Switch via: **Settings tab**, **Tools > Cycle Theme**, or **Ctrl+K > type "theme"**
-
-Load community themes via: **Tools > Load Community Theme** (JSON format)
+**Create your own:** Run `python skin_customizer.py` to visually design custom themes and export them as JSON files loadable via **Tools > Load Community Theme**.
 
 ---
 
-## Architecture
+## :building_construction: Architecture
 
-Single-file application (`~7,300 lines`):
-
-```
-LimeWire.py
-├── Imports & dependency detection (HAS_LIBROSA, HAS_DEMUCS, etc.)
-├── Platform detection (IS_WINDOWS, IS_MACOS, IS_LINUX)
-├── Theme system (13 palettes, 37 semantic tokens, apply_theme() with allowlist)
-├── Localization (6 languages, _t() i18n system)
-├── Plugin system (PluginBase, PluginManager)
-├── Font system (Segoe UI, Cascadia Code, 14-level heading hierarchy)
-├── Utility functions (audio loading, waveform, spectrogram, pitch/time)
-├── Modern widget system (ModernBtn with animated transitions, ToolTip, ToastManager, CommandPalette)
-├── 20 Page classes (all extend ScrollFrame, including SettingsPage)
-├── App class (tk.Tk) — window, menubar, logo bar, toolbar, notebook, statusbar
-└── Launch block (with --screenshots CLI for automated screenshot capture)
-```
-
-### Data Files
-
-| File | Purpose |
-|------|---------|
-| `~/.limewire_history.json` | Download history |
-| `~/.limewire_schedule.json` | Scheduled downloads |
-| `~/.limewire_settings.json` | User preferences (theme, paths) |
-| `~/.limewire_queue.json` | Batch download queue |
-| `~/.limewire_analysis_cache.json` | BPM/key analysis cache |
-| `~/.limewire_session.json` | Session state (loaded files, active tab) |
-| `~/.limewire_recent_files.json` | Recently opened files |
-
----
-
-## Highlights
-
-### Modern UI
-- Canvas-based **rounded buttons** with smooth 3-step hover transitions and press animations
-- **Smoothstep gradient logo bar** with lightning bolt icon, drop shadow title, outlined version badge
-- **Emoji icon toolbar** with active tab indicator and settings gear
-- **Segoe UI** typography with 14-level hierarchy (8pt caption to 26pt heading)
-- **Themed scrollbars** (10px ttk) matching each theme's palette
-- Professional **color palettes** with 37 semantic tokens (success/warning/error/divider/focus)
-- **Card elevation** with distinct CARD_BG, thin borders, and accent stripes
-- **Spacing constants** system (XS/SM/MD/LG/XL/2XL) for consistent layout
-
-### UX Infrastructure
-- **Command Palette** (`Ctrl+K`) &mdash; fuzzy search pages, history, and library
-- **Tooltips** on toolbar buttons (300ms delay, themed background)
-- **Toast notifications** &mdash; stacks up to 4, close button, severity colors, slide-in animation
-- **Shortcut Registry** with `Ctrl+?` help dialog and customization
-- **Live theme switching** &mdash; 13 themes, no restart required
-- **Dark title bar** &mdash; Windows DWM API matches theme
-- **Drag-and-drop** &mdash; drop audio files onto any tab
-- **Recent files menu** &mdash; File > Recent Files (persisted)
-- **Session restore** &mdash; remembers loaded files and active tab between launches
-- **Media keys** &mdash; Ctrl+Arrow for next/prev/volume
-
-### Studio Features
-- **Stem Remixer** &mdash; mix Demucs stems with per-stem volume/pan/mute/solo
-- **Batch stem separation** &mdash; queue multiple files for Demucs
-- **Batch Processor** &mdash; normalize, convert, fade, trim silence, strip metadata
-- **Effects presets** &mdash; save/load effect chains as JSON
-- **Loudness Targeting** &mdash; platform presets with 2-pass ffmpeg loudnorm
-- **Smart Playlists** &mdash; energy-level filtering + 4 sort modes + send to Player
-- **CSV export** &mdash; export library analysis from Discovery
-- **Editor zoom** &mdash; waveform zoom up to 32x with minimap overview
-- **Snap to zero-crossing** &mdash; clean cut edges in Editor
-- **Player crossfade** control (0-5000ms)
-- **Up Next** track indicator + Now Playing toast
-
----
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| "FFmpeg not found" | `winget install ffmpeg` or add ffmpeg to PATH |
-| Module not found | Check status bar module counter, install with pip |
-| Downloads fail | `pip install -U yt-dlp` to update |
-| Demucs slow | Install PyTorch with CUDA for GPU acceleration |
-| Whisper fails | `pip install openai-whisper` (first run downloads model) |
-| Theme looks wrong | Tools > Cycle Theme. Requires Segoe UI font (Windows 10/11) |
-
----
-
-## File Structure
+LimeWire ships as both a **modular package** (`limewire/`) and a backward-compatible **single-file launcher** (`LimeWire.py`):
 
 ```
 LimeWire/
-├── LimeWire.py                              # Main application (~7,300 lines)
-├── README.md                                # This file
-├── CHANGELOG.md                             # Version history
-├── ROADMAP.md                               # Feature roadmap
-├── SECURITY.md                              # Security policy & vulnerability report
-├── LimeWire_v1.0_Operation_Manual.pdf       # 43-page operation manual
-└── screenshots/                             # App screenshots (20 tabs)
-    ├── 01_search.png
-    ├── 02_download.png
-    ├── ...
-    ├── 19_coverart.png
-    └── 20_settings.png
+  LimeWire.py                 # Thin launcher (backward compat)
+  skin_customizer.py          # Visual theme editor
+  limewire/
+    __init__.py               # __version__ = "2.0.2"
+    __main__.py               # python -m limewire
+    app.py                    # App(tk.Tk) main class
+    core/
+      theme.py                # T namespace, 13 themes, apply_theme()
+      constants.py            # Timing, dimension, format constants
+      config.py               # JSON persistence, file paths
+      platform.py             # OS detection
+      deps.py                 # Optional dependency flags & lazy loaders
+      audio_backend.py        # Playback engine
+    i18n/                     # 6-language localization
+    utils/                    # Helpers, sanitization
+    services/                 # Analysis, metadata, cover art, audio processing
+    security/                 # Path confinement, subprocess allowlist, JSON validation
+    ui/                       # Widgets, styles, tooltips, toasts, command palette
+    pages/                    # 20 page classes (one per tab)
+  tests/                      # 185 tests (pytest)
 ```
 
+### Module Dependency Flow
+
+```
+core/ <-- utils/ <-- services/ <-- ui/ <-- pages/ <-- app.py
+         ^                                              ^
+     security/                                     __main__.py
+```
+
+Pages receive `app` as a constructor arg — they never import `app.py` directly. No circular imports.
+
+### Security Layer
+
+| Module | Purpose |
+|--------|---------|
+| `safe_paths.py` | Path traversal prevention, atomic writes, symlink checks |
+| `safe_subprocess.py` | Binary allowlist (ffmpeg, ffprobe, yt-dlp only) |
+| `safe_json.py` | Size limits (5 MB), depth checks (10), key allowlists |
+| `plugin_policy.py` | SHA-256 hash trust — scan without execute |
+
+### Data Files
+
+All stored in `~/.limewire_*.json`: history, settings, schedule, queue, analysis cache, session state, recent files.
+
 ---
 
-## Tech Stack
+## :test_tube: Testing
 
-| Component | Technology |
-|-----------|-----------|
-| Language | Python 3.10+ |
-| GUI | tkinter / ttk |
-| Downloads | yt-dlp |
-| Audio Playback | pyglet |
-| Metadata | mutagen |
-| Audio Processing | pydub, ffmpeg |
-| Analysis | librosa, pyloudnorm |
-| Stem Separation | Demucs (Meta AI) |
-| Pitch/Time | pyrubberband |
-| Recording | sounddevice |
-| Transcription | openai-whisper |
-| Effects | pedalboard (Spotify) |
-| Track ID | shazamio, pyacoustid, musicbrainzngs |
+```bash
+pip install pytest
+python -m pytest tests/ -v
+```
+
+**185 tests** covering security modules, core systems, utilities, and services.
 
 ---
 
-<p align="center">
-  <em>"Definitely virus-free since 2024"</em>
-</p>
+## :wrench: Tech Stack
+
+| | Component | Technology |
+|---|-----------|-----------|
+| :snake: | Language | Python 3.10+ (tested through 3.14) |
+| :desktop_computer: | GUI | tkinter / ttk |
+| :arrow_down: | Downloads | yt-dlp |
+| :speaker: | Playback | pyglet |
+| :label: | Metadata | mutagen |
+| :gear: | Processing | pydub, ffmpeg |
+| :bar_chart: | Analysis | librosa, pyloudnorm |
+| :brain: | AI Stems | Demucs (Meta AI) |
+| :musical_note: | Pitch/Time | pyrubberband |
+| :microphone: | Recording | sounddevice |
+| :speech_balloon: | Transcription | openai-whisper |
+| :control_knobs: | Effects | pedalboard (Spotify) |
+| :mag: | Track ID | shazamio, pyacoustid, musicbrainzngs |
+
+---
+
+## :books: Documentation
+
+| Document | Description |
+|----------|-------------|
+| [Operations Manual (PDF)](LimeWire_v2.0_Operation_Manual.pdf) | Comprehensive guide with screenshots for every feature |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Developer guide, project structure, how to contribute |
+| [SECURITY.md](SECURITY.md) | Security policy, vulnerability scan report |
+| [CHANGELOG.md](CHANGELOG.md) | Version history |
+| [ROADMAP.md](ROADMAP.md) | Feature roadmap |
+
+---
+
+## :handshake: Contributing
+
+1. Fork & clone
+2. `pip install -r requirements.txt`
+3. Create a branch, make changes
+4. Run tests: `python -m pytest tests/ -v`
+5. Submit a PR
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full details.
+
+---
+
+## :scroll: License
+
+[MIT License](LICENSE) — free for personal and commercial use.
+
+---
+
+<div align="center">
+<sub><em>"Definitely virus-free since 2024"</em></sub>
+</div>
