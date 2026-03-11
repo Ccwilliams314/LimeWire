@@ -640,14 +640,22 @@ class App(tk.Tk):
             il.pack(side="top", pady=(0, 0))
             nl = tk.Label(bf, text=label, font=T.F_TAB, bg=T.TOOLBAR, fg=T.TEXT_DIM)
             nl.pack(side="top")
-            ind = tk.Frame(bf, bg=T.TOOLBAR, height=3)
-            ind.pack(fill="x", side="bottom", pady=(1, 0))
-            self._tb_btns[name] = (bf, il, nl, ind)
+            # Spacer replaces old static indicator
+            tk.Frame(bf, bg=T.TOOLBAR, height=3).pack(fill="x", side="bottom", pady=(1, 0))
+            self._tb_btns[name] = (bf, il, nl)
             ToolTip(bf, f"Go to {label}")
             for w in (bf, il, nl):
                 w.bind("<Button-1>", lambda e, n=name: self._show_tab(n))
                 w.bind("<Enter>", lambda e, n=name: self._tb_hover(n, True))
                 w.bind("<Leave>", lambda e, n=name: self._tb_hover(n, False))
+
+        # Sliding indicator bar
+        self._tb_indicator = tk.Canvas(tb, height=S(3), bg=T.TOOLBAR,
+                                       highlightthickness=0, bd=0)
+        self._tb_indicator.place(relx=0, rely=1.0, y=-S(4),
+                                 relwidth=1.0, height=S(3))
+        self._tb_ind_rect = self._tb_indicator.create_rectangle(
+            0, 0, 0, S(3), fill=T.TAB_ACTIVE, outline="")
 
         _theme_display = [
             "LiveWire", "Classic Light", "Classic Dark", "Modern Dark",
@@ -663,7 +671,7 @@ class App(tk.Tk):
     def _tb_hover(self, name, entering):
         if name not in self._tb_btns:
             return
-        bf, il, nl, ind = self._tb_btns[name]
+        bf, il, nl = self._tb_btns[name]
         if entering:
             for w in (bf, il, nl):
                 w.config(bg=T.BTN_HOVER)
@@ -689,15 +697,31 @@ class App(tk.Tk):
 
     def _update_tb_active(self):
         active = self._get_active_tab()
-        for name, (bf, il, nl, ind) in self._tb_btns.items():
+        for name, (bf, il, nl) in self._tb_btns.items():
             if name == active:
                 il.config(fg=T.TAB_ACTIVE)
                 nl.config(fg=T.TAB_ACTIVE)
-                ind.config(bg=T.TAB_ACTIVE)
             else:
                 il.config(fg=T.TEXT_DIM)
                 nl.config(fg=T.TEXT_DIM)
-                ind.config(bg=T.TOOLBAR)
+        # Slide indicator to active tab
+        if active in self._tb_btns and hasattr(self, "_tb_indicator"):
+            bf = self._tb_btns[active][0]
+            self.after(10, lambda: self._slide_indicator(
+                bf.winfo_x(), bf.winfo_width()))
+
+    def _slide_indicator(self, tx, tw, steps=6, step=0):
+        if step >= steps:
+            self._tb_indicator.coords(self._tb_ind_rect,
+                                      tx, 0, tx + tw, S(3))
+            return
+        cx1, _, cx2, _ = self._tb_indicator.coords(self._tb_ind_rect)
+        t = (step + 1) / steps
+        t = t * t * (3 - 2 * t)  # smoothstep easing
+        nx1 = cx1 + (tx - cx1) * t
+        nx2 = cx2 + ((tx + tw) - cx2) * t
+        self._tb_indicator.coords(self._tb_ind_rect, nx1, 0, nx2, S(3))
+        self.after(16, lambda: self._slide_indicator(tx, tw, steps, step + 1))
 
     # ── Notebook ─────────────────────────────────────────────────────────────
     def _build_notebook(self):
@@ -740,8 +764,24 @@ class App(tk.Tk):
 
     def _show_tab(self, name):
         keys = list(self.pages.keys())
-        if name in keys:
-            self.nb.select(keys.index(name))
+        if name not in keys:
+            return
+        # Page wipe transition
+        if not hasattr(self, "_wipe_cv"):
+            self._wipe_cv = tk.Canvas(self.nb, highlightthickness=0, bd=0)
+        self._wipe_cv.configure(bg=T.BG)
+        self._wipe_cv.place(relx=0, rely=0, relwidth=1, relheight=1)
+        tk.Misc.tkraise(self._wipe_cv)
+        self.nb.select(keys.index(name))
+        self._wipe_step(5)
+
+    def _wipe_step(self, remaining):
+        if remaining <= 0:
+            self._wipe_cv.place_forget()
+            return
+        frac = remaining / 5
+        self._wipe_cv.place(relx=0, rely=0, relwidth=1, relheight=frac)
+        self.after(18, lambda: self._wipe_step(remaining - 1))
 
     def _on_tab(self, e=None):
         idx = self.nb.index(self.nb.select())

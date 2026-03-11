@@ -3,16 +3,21 @@ import tkinter as tk
 from tkinter import ttk
 
 from limewire.core.theme import T, _lerp_color
-from limewire.core.constants import SP_XS, SP_SM, SP_MD, SP_LG
+from limewire.core.constants import S, SP_XS, SP_SM, SP_MD, SP_LG
 from limewire.core.settings_registry import get_page_setting, set_page_setting
+
+
+def _round_rect_coords(x1, y1, x2, y2, radius=10):
+    """Return polygon point list for a smooth rounded rectangle."""
+    r = radius
+    return [x1+r, y1, x2-r, y1, x2, y1, x2, y1+r,
+            x2, y2-r, x2, y2, x2-r, y2, x1+r, y2,
+            x1, y2, x1, y2-r, x1, y1+r, x1, y1, x1+r, y1]
 
 
 def _round_rect(cv, x1, y1, x2, y2, radius=10, **kw):
     """Draw a smooth rounded rectangle on a Canvas."""
-    r = radius
-    pts = [x1+r, y1, x2-r, y1, x2, y1, x2, y1+r,
-           x2, y2-r, x2, y2, x2-r, y2, x1+r, y2,
-           x1, y2, x1, y2-r, x1, y1+r, x1, y1, x1+r, y1]
+    pts = _round_rect_coords(x1, y1, x2, y2, radius)
     return cv.create_polygon(pts, smooth=True, **kw)
 
 
@@ -53,6 +58,7 @@ class ModernBtn(tk.Canvas):
         self._rect = _round_rect(self, 2, 2, cw-2, ch-2,
                                  radius=max(1, radius-1),
                                  fill=self._bg_c, outline="")
+        self._orig_rect_coords = _round_rect_coords(2, 2, cw-2, ch-2, max(1, radius-1))
         self._label = self.create_text(cw//2, ch//2, text=text,
                                        font=self._font, fill=self._fg_c)
         self.tag_raise(self._label)
@@ -82,8 +88,17 @@ class ModernBtn(tk.Canvas):
     def _on_press(self, e=None):
         self._pressed = True
         self.itemconfig(self._rect, fill=T.BTN_PRESSED)
+        # Scale-down effect
+        s = S(2)
+        shrunk = _round_rect_coords(2+s, 2+s, self._cw-2-s, self._ch-2-s,
+                                    max(1, self._radius-2))
+        self.coords(self._rect, *shrunk)
+        self.coords(self._label, self._cw//2, self._ch//2 + 1)
 
     def _on_release(self, e=None):
+        # Restore original size
+        self.coords(self._rect, *self._orig_rect_coords)
+        self.coords(self._label, self._cw//2, self._ch//2)
         if self._pressed and self._cmd:
             self._pressed = False
             self.itemconfig(self._rect, fill=self._hover_c)
@@ -164,6 +179,17 @@ def GroupBox(parent, text):
         highlightcolor=T.CARD_BORDER, labelanchor="nw")
     accent = tk.Frame(lf, bg=T.LIME, width=4)
     accent.place(x=0, y=8, relheight=0.85)
+    # Drop shadow
+    shadow = tk.Frame(parent, bg=_lerp_color(T.BG, "#000000", 0.08))
+    lf._shadow = shadow
+    _orig_pack = lf.pack
+
+    def _shadow_pack(*a, **kw):
+        _orig_pack(*a, **kw)
+        lf.update_idletasks()
+        shadow.place(in_=lf, x=S(3), y=S(3), relwidth=1.0, relheight=1.0)
+        shadow.lower(lf)
+    lf.pack = _shadow_pack
     return lf
 
 
@@ -214,6 +240,99 @@ def ClassicProgress(parent, thin=False):
 
 def HSep(parent):
     tk.Frame(parent, bg=T.DIVIDER, height=1).pack(fill="x", pady=SP_SM)
+
+
+# ── Animated widgets ────────────────────────────────────────────────────────
+
+class LoadingSpinner(tk.Canvas):
+    """Animated rotating arc spinner for async operations."""
+
+    def __init__(self, parent, size=24, width=3, color=None, **kw):
+        s = S(size)
+        parent_bg = parent.cget("bg") if hasattr(parent, "cget") else T.BG
+        super().__init__(parent, width=s, height=s, highlightthickness=0,
+                         bg=parent_bg, bd=0, **kw)
+        self._size = s
+        self._lw = S(width)
+        self._color = color or T.LIME
+        self._angle = 0
+        self._running = False
+        pad = self._lw + 1
+        self.create_arc(pad, pad, s - pad, s - pad, start=0, extent=359,
+                        style="arc", outline=T.SURFACE_2, width=self._lw)
+        self._arc = self.create_arc(pad, pad, s - pad, s - pad,
+                                    start=0, extent=90, style="arc",
+                                    outline=self._color, width=self._lw)
+
+    def start(self):
+        self._running = True
+        self._tick()
+
+    def stop(self):
+        self._running = False
+
+    def _tick(self):
+        if not self._running:
+            return
+        self._angle = (self._angle + 12) % 360
+        self.itemconfig(self._arc, start=self._angle)
+        self.after(25, self._tick)
+
+
+class ShimmerProgress(tk.Canvas):
+    """Progress bar with animated shimmer highlight sweep."""
+
+    def __init__(self, parent, height=8, **kw):
+        h = S(height)
+        parent_bg = parent.cget("bg") if hasattr(parent, "cget") else T.BG
+        super().__init__(parent, height=h, highlightthickness=0,
+                         bg=parent_bg, bd=0, **kw)
+        self._h = h
+        self._value = 0
+        self._shimmer_x = 0
+        self._running = False
+        self._bg_rect = self.create_rectangle(0, 0, 0, h, fill=T.SURFACE_2, outline="")
+        self._fill_rect = self.create_rectangle(0, 0, 0, h, fill=T.LIME, outline="")
+        self._shimmer = self.create_rectangle(0, 0, 0, h, fill=T.LIME_LT, outline="",
+                                              state="hidden")
+        self.bind("<Configure>", self._redraw)
+
+    def set(self, value):
+        self._value = max(0, min(100, value))
+        self._redraw()
+        if value > 0 and not self._running:
+            self._running = True
+            self._shimmer_x = 0
+            self._animate()
+        elif value <= 0:
+            self._running = False
+            self.itemconfig(self._shimmer, state="hidden")
+
+    def _redraw(self, e=None):
+        w = self.winfo_width()
+        fill_w = int(w * self._value / 100)
+        self.coords(self._bg_rect, 0, 0, w, self._h)
+        self.coords(self._fill_rect, 0, 0, fill_w, self._h)
+
+    def _animate(self):
+        if not self._running or self._value <= 0:
+            self._running = False
+            self.itemconfig(self._shimmer, state="hidden")
+            return
+        w = self.winfo_width()
+        fill_w = int(w * self._value / 100)
+        sw = S(40)
+        self._shimmer_x += S(4)
+        if self._shimmer_x > fill_w + sw:
+            self._shimmer_x = -sw
+        x1 = max(0, self._shimmer_x)
+        x2 = min(fill_w, self._shimmer_x + sw)
+        if x2 > x1:
+            self.coords(self._shimmer, x1, 0, x2, self._h)
+            self.itemconfig(self._shimmer, state="normal")
+        else:
+            self.itemconfig(self._shimmer, state="hidden")
+        self.after(30, self._animate)
 
 
 # ── Per-page settings infrastructure ────────────────────────────────────────
