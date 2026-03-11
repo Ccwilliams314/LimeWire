@@ -10,7 +10,8 @@ from limewire.core.platform import IS_MACOS
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
-                                  ClassicEntry, ClassicCombo, ClassicProgress)
+                                  ClassicEntry, ClassicCombo, ClassicProgress,
+                                  PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.services.plugins import _plugin_manager
 
@@ -29,6 +30,13 @@ class EffectsPage(ScrollFrame):
         ClassicEntry(fr, self.file_var, width=55).pack(
             side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
         ClassicBtn(fr, "Browse...", self._browse).pack(side="left")
+        self._settings_panel = PageSettingsPanel(p, "effects", self.app, [
+            ("preview_duration_s", "Preview Duration (s)", "int", 5, {"min": 1, "max": 30}),
+            ("undo_max", "Undo Stack Size", "int", 30, {"min": 10, "max": 100}),
+            ("output_suffix", "Output Suffix", "str", "_fx", None),
+        ])
+        self._gear = GearButton(fr, self._settings_panel)
+        self._gear.pack(side="right")
 
         eg = GroupBox(p, "Effects Chain"); eg.pack(fill="x", padx=10, pady=(0, 6))
         if not HAS_PEDALBOARD:

@@ -18,6 +18,7 @@ from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
     ClassicEntry, ClassicCombo, ClassicCheck, ClassicProgress, HSep,
+    PageSettingsPanel, GearButton,
 )
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import fmt_duration
@@ -54,6 +55,13 @@ class AnalyzePage(ScrollFrame):
         ClassicEntry(fr, self.file_var, width=55).pack(side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
         ClassicBtn(fr, "Browse...", self._browse).pack(side="left", padx=(0, 6))
         LimeBtn(fr, "Analyze All", self._run_all).pack(side="left")
+        self._settings_panel = PageSettingsPanel(p, "analyze", self.app, [
+            ("custom_lufs_target", "Custom LUFS Target", "float", -14.0, {"min": -30.0, "max": 0.0, "increment": 0.5}),
+            ("normalize_tp", "True Peak (dB)", "float", -1.5, {"min": -6.0, "max": 0.0, "increment": 0.5}),
+            ("normalize_lra", "Loudness Range", "float", 11.0, {"min": 5.0, "max": 20.0, "increment": 1.0}),
+        ])
+        self._gear = GearButton(fr, self._settings_panel)
+        self._gear.pack(side="right")
 
         # Waveform display
         wg = GroupBox(p, "Waveform")

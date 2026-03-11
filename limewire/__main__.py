@@ -91,6 +91,14 @@ def main():
         _run_screenshots()
         return
 
+    # Enable DPI awareness on Windows (must be before tkinter init)
+    if sys.platform == "win32":
+        try:
+            import ctypes
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception:
+            pass
+
     from tkinter import messagebox
     from limewire.app import App
 

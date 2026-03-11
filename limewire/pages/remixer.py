@@ -9,7 +9,8 @@ from limewire.core.deps import HAS_PYDUB, _ensure_pydub
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
-                                  ClassicEntry, ClassicProgress)
+                                  ClassicEntry, ClassicProgress,
+                                  PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 
 
@@ -25,6 +26,13 @@ class RemixerPage(ScrollFrame):
         tk.Label(sg,text="Load stems from a Demucs output folder to remix.",
                  font=T.F_BODY,bg=T.BG,fg=T.TEXT_DIM).pack(anchor="w",pady=(0,SP_XS))
         bf=tk.Frame(sg,bg=T.BG); bf.pack(fill="x")
+        self._settings_panel=PageSettingsPanel(p,"remixer",self.app,[
+            ("pan_law","Pan Law","choice","linear",{"choices":["linear","constant_power","-3dB","-6dB"]}),
+            ("export_sample_rate","Export Sample Rate","choice","44100",{"choices":["44100","48000","96000"]}),
+            ("export_bit_depth","Export Bit Depth","choice","24",{"choices":["16","24","32"]}),
+        ])
+        self._gear=GearButton(bf,self._settings_panel)
+        self._gear.pack(side="right")
         self.dir_var=tk.StringVar()
         ClassicEntry(bf,self.dir_var,width=50).pack(side="left",fill="x",expand=True,padx=(0,SP_SM))
         LimeBtn(bf,"Browse Stems",self._browse).pack(side="left")

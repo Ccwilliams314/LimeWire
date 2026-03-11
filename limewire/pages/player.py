@@ -16,7 +16,7 @@ from limewire.core.config import load_json, save_json, ANALYSIS_CACHE_FILE
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
-                                  ClassicProgress)
+                                  ClassicProgress, PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import fmt_duration
 from limewire.services.cover_art import extract_cover_art
@@ -55,6 +55,15 @@ class PlayerPage(ScrollFrame):
     def _build(self, p):
         ng = GroupBox(p, "Now Playing"); ng.pack(fill="x", padx=10, pady=(10, 6))
         nr = tk.Frame(ng, bg=T.BG); nr.pack(fill="x")
+        # -- Settings panel (hidden by default) --
+        self._settings_panel = PageSettingsPanel(p, "player", self.app, [
+            ("eq_preset", "EQ Preset", "choice", "Flat",
+             {"choices": ["Flat", "Bass Boost", "Treble Boost", "Vocal", "Classical"]}),
+            ("art_display_size", "Album Art Size", "choice", "160",
+             {"choices": ["120", "160", "200", "240"]}),
+        ])
+        self._gear = GearButton(nr, self._settings_panel)
+        self._gear.pack(side="right")
         self._blank_art = tk.PhotoImage(width=160, height=160)
         self.art = tk.Label(nr, bg=T.SURFACE_2, image=self._blank_art,
                             text="\u266A", compound="center",

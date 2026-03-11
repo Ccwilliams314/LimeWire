@@ -22,7 +22,10 @@ from limewire.core.config import (
 from limewire.core.constants import (
     CLIPBOARD_POLL_MS, CLIPBOARD_INITIAL_DELAY_MS, STATUS_PULSE_MS,
     SCHEDULER_POLL_SEC, HISTORY_MAX, YDL_BASE,
+    S, LOGO_BAR_HEIGHT, TOOLBAR_HEIGHT, STATUS_HEIGHT,
+    init_dpi_scale, set_user_scale,
 )
+from limewire.core.settings_registry import apply_defaults, get_setting
 from limewire.core.deps import (
     HAS_FFMPEG, HAS_LIBROSA, HAS_LOUDNESS, HAS_SHAZAM, HAS_SHAZAM_SEARCH,
     HAS_MB, HAS_ACOUSTID, HAS_DEMUCS, HAS_PYFLP, HAS_SERATO,
@@ -56,10 +59,11 @@ from limewire.pages import (
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
+        init_dpi_scale(self)
         self.title("LimeWire 3.0.0 Studio Edition")
         self.minsize(760, 700)
         sw, sh = self.winfo_screenwidth(), self.winfo_screenheight()
-        w, h = min(960, sw - 40), min(960, sh - 80)
+        w, h = min(int(sw * 0.75), sw - 40), min(int(sh * 0.85), sh - 80)
         self.geometry(f"{w}x{h}")
         self.configure(bg=T.BG)
         self._apply_dark_titlebar()
@@ -70,13 +74,19 @@ class App(tk.Tk):
         self._cancel = threading.Event()
         self._dark_mode = False
         self.settings = load_json(SETTINGS_FILE, {"clipboard_watch": True, "proxy": "", "rate_limit": ""})
+        apply_defaults(self.settings)
+        # Apply user font-scale preference
+        font_scale = get_setting(self.settings, "ui.font_scale")
+        if font_scale and font_scale != 1.0:
+            set_user_scale(font_scale)
         set_language(self.settings.get("language", "en"))
         theme_mode = self.settings.get("theme", "livewire")
         self._dark_mode = (theme_mode != "light")
         apply_theme(theme_mode)
         self.history = load_json(HISTORY_FILE, [])
         self.schedule = load_json(SCHEDULE_FILE, [])
-        self.output_dir = os.path.join(os.path.expanduser("~"), "Downloads", "LimeWire")
+        self.output_dir = self.settings.get("output_dir",
+                            os.path.join(os.path.expanduser("~"), "Downloads", "LimeWire"))
         self._last_clipboard = ""
         init_limewire_styles(self)
         self._build_menubar()
@@ -87,6 +97,17 @@ class App(tk.Tk):
         self._start_scheduler()
         self._start_clipboard_watch()
         self._bind_shortcuts()
+        # Restore window geometry
+        if get_setting(self.settings, "restore_window_geometry"):
+            saved_geo = self.settings.get("window_geometry")
+            if saved_geo:
+                try: self.geometry(saved_geo)
+                except Exception: pass
+        # Restore last active tab
+        if get_setting(self.settings, "restore_active_tab"):
+            saved_tab = self.settings.get("last_active_tab")
+            if saved_tab and saved_tab in self.pages:
+                self.after(100, lambda: self._show_tab(saved_tab))
         self._setup_dnd()
         self._restore_session()
         self._init_discord_rpc()
@@ -145,6 +166,14 @@ class App(tk.Tk):
             pass
 
     def _on_close(self):
+        # Save window geometry and active tab
+        try:
+            self.settings["window_geometry"] = self.geometry()
+        except Exception:
+            pass
+        if hasattr(self, "_current_tab"):
+            self.settings["last_active_tab"] = self._current_tab
+        self._save_settings()
         self._save_session()
         self._cancel.set()
         self._close_discord_rpc()
@@ -514,7 +543,7 @@ class App(tk.Tk):
 
     # ── Logo bar ─────────────────────────────────────────────────────────────
     def _build_logo_bar(self):
-        LOGO_H = 52
+        LOGO_H = S(LOGO_BAR_HEIGHT)
         bar = tk.Canvas(self, height=LOGO_H, highlightthickness=0, bd=0)
         bar.pack(fill="x")
 
@@ -582,22 +611,26 @@ class App(tk.Tk):
     # ── Toolbar ──────────────────────────────────────────────────────────────
     def _build_toolbar(self):
         tk.Frame(self, bg=T.DIVIDER, height=1).pack(fill="x")
-        tb = tk.Frame(self, bg=T.TOOLBAR, height=44)
+        tb = tk.Frame(self, bg=T.TOOLBAR, height=S(TOOLBAR_HEIGHT))
         tb.pack(fill="x")
         tb.pack_propagate(False)
         self._toolbar = tb
         self._tb_btns = {}
         items = [
-            ("search", "\U0001F50D", "Search"), ("download", "\U0001F4E5", "Batch"),
+            ("search", "\U0001F50D", "Search"), ("download", "\U0001F4E5", "Download"),
             ("playlist", "\U0001F4CB", "Playlist"), ("converter", "\U0001F504", "Convert"),
             ("player", "\U0001F3B5", "Player"), ("analyze", "\U0001F4CA", "Analyze"),
             ("stems", "\U0001F39A", "Stems"), ("effects", "\u2728", "Effects"),
-            ("discovery", "\U0001F30D", "Library"), ("samples", "\U0001F3B6", "Samples"),
+            ("discovery", "\U0001F30D", "Discover"), ("samples", "\U0001F3B6", "Samples"),
             ("editor", "\u2702", "Editor"), ("recorder", "\U0001F3A4", "Record"),
             ("spectrogram", "\U0001F308", "Spectro"), ("pitchtime", "\U0001F3B9", "Pitch"),
             ("remixer", "\U0001F3A7", "Remix"), ("batch", "\u2699", "Batch"),
             ("schedule", "\u23F0", "Schedule"), ("history", "\U0001F4DC", "History"),
             ("coverart", "\U0001F5BC", "Cover"),
+            ("lyrics", "\U0001F4DD", "Lyrics"),
+            ("visualizer", "\U0001F4A0", "Visual"),
+            ("library", "\U0001F4DA", "Library"),
+            ("dj", "\U0001F39B", "DJ"),
             ("settings", "\u2699\uFE0F", "Settings"),
         ]
         for name, icon, label in items:
@@ -670,6 +703,9 @@ class App(tk.Tk):
     def _build_notebook(self):
         self.nb = ttk.Notebook(self, style="TNotebook")
         self.nb.pack(fill="both", expand=True, padx=4)
+        # Force tab bar hidden after notebook creation
+        s = ttk.Style()
+        s.layout("TNotebook", [("TNotebook.client", {"sticky": "nswe"})])
         self.pages = {}
         for name, label, cls in [
             ("search", "Search & Grab", SearchPage),
@@ -710,15 +746,17 @@ class App(tk.Tk):
     def _on_tab(self, e=None):
         idx = self.nb.index(self.nb.select())
         keys = list(self.pages.keys())
-        if idx < len(keys) and hasattr(self.pages[keys[idx]], "refresh"):
-            self.pages[keys[idx]].refresh()
+        if idx < len(keys):
+            self._current_tab = keys[idx]
+            if hasattr(self.pages[keys[idx]], "refresh"):
+                self.pages[keys[idx]].refresh()
         if hasattr(self, "_tb_btns"):
             self._update_tb_active()
 
     # ── Status bar ───────────────────────────────────────────────────────────
     def _build_statusbar(self):
         tk.Frame(self, bg=T.DIVIDER, height=1).pack(fill="x", side="bottom")
-        sb = tk.Frame(self, bg=T.SURFACE_3, height=26)
+        sb = tk.Frame(self, bg=T.SURFACE_3, height=S(STATUS_HEIGHT))
         sb.pack(fill="x", side="bottom")
         sb.pack_propagate(False)
         self.status_lbl = tk.Label(

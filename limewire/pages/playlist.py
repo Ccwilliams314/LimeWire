@@ -12,6 +12,7 @@ from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
     ClassicEntry, ClassicCombo, ClassicProgress,
+    PageSettingsPanel, GearButton,
 )
 from limewire.utils.helpers import fmt_duration
 
@@ -31,6 +32,12 @@ class PlaylistPage(ScrollFrame):
         g.pack(fill="x", padx=10, pady=(10, 6))
         r = tk.Frame(g, bg=T.BG)
         r.pack(fill="x")
+        self._settings_panel = PageSettingsPanel(p, "playlist", self.app, [
+            ("concurrent_downloads", "Concurrent Downloads", "int", 1, {"min": 1, "max": 4}),
+            ("track_numbering", "Track Numbering Prefix", "bool", True, None),
+        ])
+        self._gear = GearButton(r, self._settings_panel)
+        self._gear.pack(side="right")
         self.pl_var = tk.StringVar()
         ClassicEntry(r, self.pl_var, width=50).pack(side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
         LimeBtn(r, "Fetch", self._fetch).pack(side="left")

@@ -6,18 +6,18 @@
 
 THEME_LIGHT={
     "BG":"#F0F2F5","BG_DARK":"#E4E6EA","PANEL":"#FFFFFF","WHITE":"#FFFFFF","BLACK":"#1A1A2E",
-    "TEXT":"#1A1A2E","TEXT_DIM":"#4A5568","TEXT_BLUE":"#0A58CA",
+    "TEXT":"#1A1A2E","TEXT_DIM":"#5A6577","TEXT_BLUE":"#0A58CA",
     "LIME":"#27AE60","LIME_DK":"#1E8449","LIME_LT":"#82E0AA",
     "BLUE_HL":"#0D6EFD","RED":"#DC3545","YELLOW":"#E0A800","ORANGE":"#E8590C",
-    "TOOLBAR":"#FFFFFF","BORDER_L":"#D0D5DD","BORDER_D":"#BFC5CF","INPUT_BG":"#FFFFFF","TROUGH":"#DEE2E6",
-    "CARD_BG":"#FFFFFF","CARD_BORDER":"#D0D5DD","BTN_HOVER":"#E4E6EA",
+    "TOOLBAR":"#FFFFFF","BORDER_L":"#C0C7D0","BORDER_D":"#A8B0BB","INPUT_BG":"#FFFFFF","TROUGH":"#D4D8DE",
+    "CARD_BG":"#FFFFFF","CARD_BORDER":"#B8BFC8","BTN_HOVER":"#D8DBE0",
     "LIME_HOVER":"#1E8449","ORANGE_HOVER":"#C74E0A",
-    "INPUT_BORDER":"#BFC5CF","INPUT_FOCUS":"#6EA8FE","TAB_ACTIVE":"#27AE60",
+    "INPUT_BORDER":"#B0B8C4","INPUT_FOCUS":"#6EA8FE","TAB_ACTIVE":"#27AE60",
     "SUCCESS":"#27AE60","WARNING":"#E0A800","ERROR":"#DC3545","INFO":"#0A85D1",
-    "SURFACE":"#FFFFFF","SURFACE_2":"#F5F6F8","SURFACE_3":"#E4E6EA",
+    "SURFACE":"#FFFFFF","SURFACE_2":"#E6E9EE","SURFACE_3":"#D8DBE0",
     "ACCENT_START":"#27AE60","ACCENT_END":"#17A589",
     "CANVAS_BG":"#161B22",
-    "BTN_PRESSED":"#D0D5DD","CARD_SHADOW":"#C8CDD5","DIVIDER":"#E2E6EB","FOCUS_RING":"#0D6EFD",
+    "BTN_PRESSED":"#C8CDD5","CARD_SHADOW":"#B0B8C4","DIVIDER":"#D0D5DD","FOCUS_RING":"#0D6EFD",
 }
 THEME_DARK={
     "BG":"#1A1D21","BG_DARK":"#13161A","PANEL":"#22262B","WHITE":"#2A2E33","BLACK":"#0D0F12",
@@ -201,18 +201,18 @@ THEME_HIGHCONTRAST={
 }
 THEME_OLDSCHOOL={
     "BG":"#E8E8E0","BG_DARK":"#D4D4CC","PANEL":"#F0F0EA","WHITE":"#FFFFFF","BLACK":"#2A2A2A",
-    "TEXT":"#1A1A1A","TEXT_DIM":"#606060","TEXT_BLUE":"#006600",
+    "TEXT":"#1A1A1A","TEXT_DIM":"#555555","TEXT_BLUE":"#006600",
     "LIME":"#4CAF50","LIME_DK":"#388E3C","LIME_LT":"#81C784",
     "BLUE_HL":"#388E3C","RED":"#D32F2F","YELLOW":"#FBC02D","ORANGE":"#F57C00",
-    "TOOLBAR":"#D8D8D0","BORDER_L":"#BDBDB5","BORDER_D":"#A0A098","INPUT_BG":"#FFFFFF","TROUGH":"#C8C8C0",
-    "CARD_BG":"#F5F5EF","CARD_BORDER":"#BDBDB5","BTN_HOVER":"#D0D0C8",
+    "TOOLBAR":"#D8D8D0","BORDER_L":"#A8A8A0","BORDER_D":"#909088","INPUT_BG":"#FFFFFF","TROUGH":"#C0C0B8",
+    "CARD_BG":"#F0F0EA","CARD_BORDER":"#A8A8A0","BTN_HOVER":"#CCCCC4",
     "LIME_HOVER":"#2E7D32","ORANGE_HOVER":"#E06500",
-    "INPUT_BORDER":"#BDBDB5","INPUT_FOCUS":"#4CAF50","TAB_ACTIVE":"#4CAF50",
+    "INPUT_BORDER":"#A8A8A0","INPUT_FOCUS":"#4CAF50","TAB_ACTIVE":"#4CAF50",
     "SUCCESS":"#4CAF50","WARNING":"#FBC02D","ERROR":"#D32F2F","INFO":"#1976D2",
-    "SURFACE":"#F0F0EA","SURFACE_2":"#E8E8E0","SURFACE_3":"#D4D4CC",
+    "SURFACE":"#F0F0EA","SURFACE_2":"#D8D8D0","SURFACE_3":"#CCCCC4",
     "ACCENT_START":"#4CAF50","ACCENT_END":"#2E7D32",
     "CANVAS_BG":"#1A1A1A",
-    "BTN_PRESSED":"#C0C0B8","CARD_SHADOW":"#B0B0A8","DIVIDER":"#D0D0C8","FOCUS_RING":"#388E3C",
+    "BTN_PRESSED":"#B8B8B0","CARD_SHADOW":"#A0A098","DIVIDER":"#C0C0B8","FOCUS_RING":"#388E3C",
 }
 THEME_ELECTRIC={
     "BG":"#0A0A0A","BG_DARK":"#050505","PANEL":"#141414","WHITE":"#1C1C1C","BLACK":"#020202",
@@ -238,7 +238,7 @@ THEMES={"livewire":THEME_LIVEWIRE,"light":THEME_LIGHT,"dark":THEME_DARK,"modern"
 
 # Per-theme branding (logo text and icon override)
 THEME_BRANDING = {
-    "electric": {"logo_text": "LiveWire Studio", "logo_icon": "\u26A1"},
+    "electric": {"logo_text": "LiveWire", "logo_icon": "\u26A1"},
     "oldschool": {"logo_text": "LimeWire", "logo_icon": "\U0001F34B"},
 }
 
@@ -258,18 +258,6 @@ T = _ThemeNamespace()
 for _k, _v in THEME_LIVEWIRE.items():
     setattr(T, _k, _v)
 
-# Font defaults
-T.F_TITLE=("Segoe UI Semibold",20); T.F_LOGO=("Segoe UI Black",22)
-T.F_BODY=("Segoe UI",11); T.F_BOLD=("Segoe UI Semibold",11)
-T.F_SMALL=("Segoe UI",9); T.F_BTN=("Segoe UI Semibold",10)
-T.F_MONO=("Cascadia Code",10); T.F_TAB=("Segoe UI Semibold",8)
-T.F_STATUS=("Segoe UI",9); T.F_HEADER=("Segoe UI Semibold",14)
-T.F_SECTION=("Segoe UI Semibold",11)
-T.F_H1=("Segoe UI Bold",26); T.F_H2=("Segoe UI Semibold",21)
-T.F_H3=("Segoe UI Semibold",17); T.F_H4=("Segoe UI Semibold",14)
-T.F_CAPTION=("Segoe UI",8); T.F_LABEL=("Segoe UI Semibold",9)
-T.LOGO_TEXT="LimeWire"; T.LOGO_ICON="\u26A1"
-
 # Allowed theme keys (security: prevents community themes from overwriting arbitrary attrs)
 _THEME_KEYS = frozenset(THEME_LIVEWIRE.keys())
 
@@ -280,6 +268,33 @@ def _lerp_color(c1, c2, t):
     r2,g2,b2=int(c2[1:3],16),int(c2[3:5],16),int(c2[5:7],16)
     r=int(r1+(r2-r1)*t); g=int(g1+(g2-g1)*t); b=int(b1+(b2-b1)*t)
     return f"#{r:02x}{g:02x}{b:02x}"
+
+
+# ── Font scaling ─────────────────────────────────────────────────────────────
+# Base sizes bumped for modern HD displays (was: BODY=11, BTN=10, TAB=8, etc.)
+_BASE_FONTS = {
+    "F_TITLE": ("Segoe UI Semibold", 20), "F_LOGO": ("Segoe UI Black", 22),
+    "F_BODY": ("Segoe UI", 12),           "F_BOLD": ("Segoe UI Semibold", 12),
+    "F_SMALL": ("Segoe UI", 10),          "F_BTN": ("Segoe UI Semibold", 11),
+    "F_MONO": ("Cascadia Code", 11),      "F_TAB": ("Segoe UI Semibold", 10),
+    "F_STATUS": ("Segoe UI", 10),         "F_HEADER": ("Segoe UI Semibold", 15),
+    "F_SECTION": ("Segoe UI Semibold", 12),
+    "F_H1": ("Segoe UI Bold", 26),        "F_H2": ("Segoe UI Semibold", 21),
+    "F_H3": ("Segoe UI Semibold", 17),    "F_H4": ("Segoe UI Semibold", 14),
+    "F_CAPTION": ("Segoe UI", 9),         "F_LABEL": ("Segoe UI Semibold", 10),
+}
+
+
+def _scale_fonts():
+    """Apply DPI-scaled fonts to the T namespace."""
+    from limewire.core.constants import S
+    for attr, (family, base_size) in _BASE_FONTS.items():
+        setattr(T, attr, (family, S(base_size)))
+
+
+# Initialize font defaults (DPI scale = 1.0 until init_dpi_scale() is called)
+_scale_fonts()
+T.LOGO_TEXT="LimeWire"; T.LOGO_ICON="\u26A1"
 
 
 def apply_theme(mode="livewire"):
@@ -295,16 +310,8 @@ def apply_theme(mode="livewire"):
     if "CARD_SHADOW" not in t: T.CARD_SHADOW = T.BG_DARK
     if "DIVIDER" not in t: T.DIVIDER = _lerp_color(T.BORDER_L, T.BG, 0.5)
     if "FOCUS_RING" not in t: T.FOCUS_RING = T.INPUT_FOCUS
-    # Modern fonts for all themes (Segoe UI everywhere)
-    T.F_TITLE=("Segoe UI Semibold",20); T.F_LOGO=("Segoe UI Black",22)
-    T.F_BODY=("Segoe UI",11); T.F_BOLD=("Segoe UI Semibold",11)
-    T.F_SMALL=("Segoe UI",9); T.F_BTN=("Segoe UI Semibold",10)
-    T.F_MONO=("Cascadia Code",10); T.F_TAB=("Segoe UI Semibold",8)
-    T.F_STATUS=("Segoe UI",9); T.F_HEADER=("Segoe UI Semibold",14)
-    T.F_SECTION=("Segoe UI Semibold",11)
-    T.F_H1=("Segoe UI Bold",26); T.F_H2=("Segoe UI Semibold",21)
-    T.F_H3=("Segoe UI Semibold",17); T.F_H4=("Segoe UI Semibold",14)
-    T.F_CAPTION=("Segoe UI",8); T.F_LABEL=("Segoe UI Semibold",9)
+    # Modern fonts — DPI-scaled
+    _scale_fonts()
     # Per-theme branding
     branding = THEME_BRANDING.get(mode, {})
     T.LOGO_TEXT = branding.get("logo_text", "LimeWire")

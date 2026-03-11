@@ -10,7 +10,7 @@ from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
                                   ClassicEntry, ClassicCombo, ClassicListbox,
-                                  ClassicProgress)
+                                  ClassicProgress, PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.services.audio_processing import (
     audio_segment_to_waveform, load_audio_pydub, export_audio_pydub,
@@ -34,6 +34,13 @@ class EditorPage(ScrollFrame):
         self.file_var=tk.StringVar()
         ClassicEntry(fr,self.file_var,width=55).pack(side="left",fill="x",expand=True,ipady=2,padx=(0,8))
         ClassicBtn(fr,"Browse...",self._browse).pack(side="left")
+        self._settings_panel=PageSettingsPanel(p,"editor",self.app,[
+            ("default_fade_ms","Default Fade (ms)","int",500,{"min":10,"max":5000}),
+            ("max_zoom","Max Zoom","choice","32",{"choices":["8","16","32","64"]}),
+            ("normalization_target_db","Normalize Target (dB)","float",-1.0,{"min":-6.0,"max":0.0,"increment":0.5}),
+        ])
+        self._gear=GearButton(fr,self._settings_panel)
+        self._gear.pack(side="right")
         self.info_lbl=tk.Label(fg,text="Load an audio file to begin editing",font=T.F_SMALL,bg=T.BG,fg=T.TEXT_DIM,anchor="w")
         self.info_lbl.pack(fill="x",pady=(4,0))
 

@@ -31,4 +31,16 @@ class ScrollFrame(tk.Frame):
                       lambda e: self._cv.unbind_all("<MouseWheel>"))
 
     def _on_wheel(self, e):
-        self._cv.yview_scroll(-1 * (e.delta // 120), "units")
+        """Smooth scroll — animate over several frames."""
+        delta = -1 * (e.delta // 120)
+        self._smooth_scroll(delta * 3, steps=6)
+
+    def _smooth_scroll(self, total_units, steps=6, step=0):
+        if step >= steps or total_units == 0:
+            return
+        self._cv.yview_scroll(1 if total_units > 0 else -1, "units")
+        remaining = abs(total_units) - 1
+        if remaining > 0:
+            sign = 1 if total_units > 0 else -1
+            self._cv.after(12, lambda: self._smooth_scroll(
+                sign * remaining, steps, step + 1))

@@ -12,7 +12,8 @@ from limewire.core.deps import (
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, GroupBox,
-                                  ClassicEntry, ClassicCombo)
+                                  ClassicEntry, ClassicCombo,
+                                  PageSettingsPanel, GearButton)
 from limewire.services.audio_processing import _get_colormap
 
 
@@ -30,6 +31,13 @@ class SpectrogramPage(ScrollFrame):
         self.file_var=tk.StringVar()
         ClassicEntry(fr,self.file_var,width=55).pack(side="left",fill="x",expand=True,ipady=2,padx=(0,8))
         ClassicBtn(fr,"Browse...",self._browse).pack(side="left")
+        self._settings_panel=PageSettingsPanel(p,"spectrogram",self.app,[
+            ("default_sample_rate","Sample Rate","choice","22050",{"choices":["22050","44100","48000"]}),
+            ("db_range_min","dB Floor","int",-80,{"min":-120,"max":-20}),
+            ("db_range_max","dB Ceiling","int",0,{"min":-20,"max":0}),
+        ])
+        self._gear=GearButton(fr,self._settings_panel)
+        self._gear.pack(side="right")
 
         # Settings
         sg=GroupBox(p,"Spectrogram Settings"); sg.pack(fill="x",padx=10,pady=(0,6))

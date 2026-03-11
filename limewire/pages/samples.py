@@ -9,7 +9,8 @@ from limewire.core.theme import T
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
-                                  ClassicEntry, ClassicCombo, ClassicListbox)
+                                  ClassicEntry, ClassicCombo, ClassicListbox,
+                                  PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import sanitize_filename
 
@@ -21,6 +22,12 @@ class SamplesPage(ScrollFrame):
     def _build(self,p):
         sg=GroupBox(p,"Freesound Sample Search"); sg.pack(fill="x",padx=10,pady=(10,6))
         sr=tk.Frame(sg,bg=T.BG); sr.pack(fill="x")
+        self._settings_panel=PageSettingsPanel(p,"samples",self.app,[
+            ("results_per_page","Results Per Page","int",30,{"min":10,"max":100}),
+            ("request_timeout","Request Timeout (s)","int",15,{"min":5,"max":60}),
+        ])
+        self._gear=GearButton(sr,self._settings_panel)
+        self._gear.pack(side="right")
         tk.Label(sr,text="Search:",font=T.F_BOLD,bg=T.BG,fg=T.TEXT).pack(side="left",padx=(0,6))
         self.query_var=tk.StringVar()
         self.query_e=ClassicEntry(sr,self.query_var,width=30)

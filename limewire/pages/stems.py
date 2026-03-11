@@ -10,6 +10,7 @@ from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
     ClassicEntry, ClassicCombo, ClassicProgress,
+    PageSettingsPanel, GearButton,
 )
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import open_folder
@@ -36,6 +37,12 @@ class StemsPage(ScrollFrame):
         self.file_var = tk.StringVar()
         ClassicEntry(fr, self.file_var, width=55).pack(side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
         ClassicBtn(fr, "Browse...", self._browse).pack(side="left")
+        self._settings_panel = PageSettingsPanel(p, "stems", self.app, [
+            ("demucs_device", "Device", "choice", "auto", {"choices": ["auto", "cpu", "cuda"]}),
+            ("stem_output_format", "Stem Format", "choice", "wav", {"choices": ["wav", "flac", "mp3"]}),
+        ])
+        self._gear = GearButton(fr, self._settings_panel)
+        self._gear.pack(side="right")
 
         sg = GroupBox(p, "Separation Settings")
         sg.pack(fill="x", padx=10, pady=(0, 6))

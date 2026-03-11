@@ -14,6 +14,7 @@ from limewire.core.audio_backend import _dj_deck_a, _dj_deck_b
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox, ClassicProgress,
+    PageSettingsPanel, GearButton,
 )
 from limewire.ui.toast import show_toast
 from limewire.services.audio_processing import generate_waveform_data
@@ -77,6 +78,12 @@ class DJPage(ScrollFrame):
         sg.pack(fill="x", padx=10, pady=(0, 10))
         sr = tk.Frame(sg, bg=T.BG)
         sr.pack(fill="x")
+        self._settings_panel = PageSettingsPanel(p, "dj", self.app, [
+            ("speed_range", "Speed Range (%)", "choice", "8", {"choices": ["4", "8", "12", "16"]}),
+            ("crossfader_curve", "Crossfader Curve", "choice", "linear", {"choices": ["linear", "fast_cut", "slow_cut"]}),
+        ])
+        self._gear = GearButton(sr, self._settings_panel)
+        self._gear.pack(side="right")
         self._rec_btn = OrangeBtn(sr, "Record Mix", self._toggle_recording)
         self._rec_btn.pack(side="left", padx=(0, 6))
         ClassicBtn(sr, "Export Session Log", self._export_session).pack(side="left")

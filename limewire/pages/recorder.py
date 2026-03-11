@@ -15,7 +15,8 @@ from limewire.core.deps import (
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
-                                  ClassicEntry, ClassicCombo)
+                                  ClassicEntry, ClassicCombo,
+                                  PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import sanitize_filename
 from limewire.services.audio_processing import _srt_timestamp
@@ -35,6 +36,16 @@ class RecorderPage(ScrollFrame):
         # Record controls
         rg=GroupBox(p,"Record"); rg.pack(fill="x",padx=10,pady=(10,6))
         cr=tk.Frame(rg,bg=T.BG); cr.pack(fill="x")
+        # -- Settings panel (hidden by default) --
+        self._settings_panel = PageSettingsPanel(p, "recorder", self.app, [
+            ("sample_rate", "Sample Rate", "choice", "44100",
+             {"choices": ["22050", "44100", "48000", "96000"]}),
+            ("channels", "Channels", "choice", "1", {"choices": ["1", "2"]}),
+            ("vu_warn_threshold", "VU Warn Level", "float", 0.7, {"min": 0.5, "max": 0.9, "increment": 0.05}),
+            ("vu_clip_threshold", "VU Clip Level", "float", 0.9, {"min": 0.8, "max": 1.0, "increment": 0.05}),
+        ])
+        self._gear = GearButton(cr, self._settings_panel)
+        self._gear.pack(side="right")
         tk.Label(cr,text="Device:",font=T.F_BODY,bg=T.BG,fg=T.TEXT).pack(side="left",padx=(0,6))
         self.dev_var=tk.StringVar(value="Default")
         self.dev_combo=ClassicCombo(cr,self.dev_var,["Default"],width=30)

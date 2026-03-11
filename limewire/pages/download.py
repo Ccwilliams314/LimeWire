@@ -15,6 +15,7 @@ from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, GroupBox,
     ClassicEntry, ClassicCombo, ClassicCheck, ClassicListbox, ClassicProgress,
+    PageSettingsPanel, GearButton,
 )
 
 
@@ -36,6 +37,16 @@ class DownloadPage(ScrollFrame):
         qg.pack(fill="x", padx=10, pady=(10, 6))
         qr = tk.Frame(qg, bg=T.BG)
         qr.pack(fill="x", pady=(0, 6))
+        # -- Settings panel (hidden by default) --
+        self._settings_panel = PageSettingsPanel(p, "download", self.app, [
+            ("output_template", "Filename Template", "str", "%(title)s.%(ext)s", None),
+            ("file_conflict", "File Conflict", "choice", "skip",
+             {"choices": ["overwrite", "skip", "rename"]}),
+            ("retry_count", "Retry Count", "int", 3, {"min": 1, "max": 10}),
+            ("retry_timeout", "Retry Timeout (s)", "int", 30, {"min": 10, "max": 120}),
+        ])
+        self._gear = GearButton(qr, self._settings_panel)
+        self._gear.pack(side="right")
         tk.Label(qr, text="URL:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT).pack(side="left", padx=(0, 6))
         self.url_var = tk.StringVar()
         self.url_e = ClassicEntry(qr, self.url_var, width=45)

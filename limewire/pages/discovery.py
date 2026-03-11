@@ -10,7 +10,7 @@ from limewire.core.config import ANALYSIS_CACHE_FILE, load_json, save_json
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
                                   ClassicEntry, ClassicCombo, ClassicListbox,
-                                  ClassicProgress)
+                                  ClassicProgress, PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.services.analysis import (
     analyze_bpm_key, key_to_camelot, get_harmonic_matches,
@@ -36,6 +36,13 @@ class DiscoveryPage(ScrollFrame):
             side="left", fill="x", expand=True, ipady=2, padx=(0, 6))
         ClassicBtn(sr, "Browse...", self._browse_lib).pack(side="left", padx=(0, 6))
         LimeBtn(sr, "Scan Library", self._scan_library).pack(side="left")
+        self._settings_panel = PageSettingsPanel(p, "discovery", self.app, [
+            ("max_scan_files", "Max Scan Files", "int", 50000, {"min": 1000, "max": 200000}),
+            ("cache_limit", "Cache Limit", "int", 5000, {"min": 500, "max": 50000}),
+            ("analysis_workers", "Analysis Workers", "int", 4, {"min": 1, "max": 8}),
+        ])
+        self._gear = GearButton(sr, self._settings_panel)
+        self._gear.pack(side="right")
         self.scan_status = tk.Label(
             sg,
             text="Scan a music folder to analyze BPM, key, and build a library index",

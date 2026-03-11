@@ -16,6 +16,7 @@ from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
     ClassicEntry, ClassicCombo, ClassicCheck, ClassicListbox, ClassicProgress, HSep,
+    PageSettingsPanel, GearButton,
 )
 from limewire.utils.helpers import (
     is_url, detect_source, auto_detect_format, sanitize_filename,
@@ -78,6 +79,15 @@ class SearchPage(ScrollFrame):
         ig.pack(fill="x", padx=10, pady=8)
         ir = tk.Frame(ig, bg=T.BG)
         ir.pack(fill="x")
+        # -- Settings panel (hidden by default) --
+        self._settings_panel = PageSettingsPanel(p, "search", self.app, [
+            ("subtitle_lang", "Subtitle Language", "str", "en", None),
+            ("output_template", "Filename Template", "str", "%(title)s.%(ext)s", None),
+            ("file_conflict", "File Conflict", "choice", "skip",
+             {"choices": ["overwrite", "skip", "rename"]}),
+        ])
+        self._gear = GearButton(ir, self._settings_panel)
+        self._gear.pack(side="right")
         self.thumb = tk.Label(ir, bg=T.CARD_BG, width=18, height=6, text="No\nPreview",
                                font=T.F_SMALL, fg=T.TEXT_DIM,
                                relief="flat", bd=0, highlightthickness=1,

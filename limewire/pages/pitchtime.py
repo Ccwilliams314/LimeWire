@@ -8,7 +8,8 @@ from limewire.core.constants import PITCH_SEMITONE_RANGE, TEMPO_RANGE
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, GroupBox,
-                                  ClassicEntry, ClassicCombo, ClassicProgress)
+                                  ClassicEntry, ClassicCombo, ClassicProgress,
+                                  PageSettingsPanel, GearButton)
 from limewire.services.audio_processing import pitch_shift_audio, time_stretch_audio, run_demucs
 from limewire.services.analysis import analyze_bpm_key
 from limewire.utils.helpers import open_folder
@@ -28,6 +29,11 @@ class PitchTimePage(ScrollFrame):
         # Source
         fg=GroupBox(p,"Source Audio"); fg.pack(fill="x",padx=10,pady=(10,6))
         fr=tk.Frame(fg,bg=T.BG); fr.pack(fill="x")
+        self._settings_panel=PageSettingsPanel(p,"pitchtime",self.app,[
+            ("semitone_range","Semitone Range","choice","12",{"choices":["6","12","24"]}),
+        ])
+        self._gear=GearButton(fr,self._settings_panel)
+        self._gear.pack(side="right")
         self.file_var=tk.StringVar()
         ClassicEntry(fr,self.file_var,width=45).pack(side="left",fill="x",expand=True,ipady=2,padx=(0,8))
         ClassicBtn(fr,"Browse...",self._browse).pack(side="left",padx=(0,6))

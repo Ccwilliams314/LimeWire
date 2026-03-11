@@ -14,6 +14,7 @@ from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, GroupBox, ClassicCheck, ClassicEntry,
+    PageSettingsPanel, GearButton,
 )
 from limewire.ui.toast import show_toast
 from limewire.services.metadata import lookup_lyrics
@@ -41,6 +42,12 @@ class LyricsPage(ScrollFrame):
         cg.pack(fill="x", padx=10, pady=(10, 6))
         cr = tk.Frame(cg, bg=T.BG)
         cr.pack(fill="x")
+        self._settings_panel = PageSettingsPanel(p, "lyrics", self.app, [
+            ("font_family", "Font Family", "choice", "Segoe UI", {"choices": ["Segoe UI", "Consolas", "Arial", "Georgia"]}),
+            ("alignment", "Text Alignment", "choice", "center", {"choices": ["left", "center", "right"]}),
+        ])
+        self._gear = GearButton(cr, self._settings_panel)
+        self._gear.pack(side="right")
         LimeBtn(cr, "Fetch Lyrics", self._fetch_lyrics).pack(side="left", padx=(0, 6))
         ClassicBtn(cr, "Load LRC", self._load_lrc).pack(side="left", padx=(0, 6))
         ClassicBtn(cr, "Save LRC", self._save_lrc).pack(side="left", padx=(0, 6))

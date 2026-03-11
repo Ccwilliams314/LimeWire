@@ -9,7 +9,8 @@ from limewire.core.theme import T
 from limewire.core.config import save_json, load_json, HISTORY_FILE, ANALYSIS_CACHE_FILE
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, GroupBox,
-                                  ClassicEntry, ClassicListbox, HSep)
+                                  ClassicEntry, ClassicListbox, HSep,
+                                  PageSettingsPanel, GearButton)
 from limewire.ui.toast import show_toast
 from limewire.utils.helpers import sanitize_filename, open_folder
 
@@ -23,6 +24,12 @@ class HistoryPage(ScrollFrame):
         hdr = tk.Frame(p, bg=T.BG, padx=10, pady=8); hdr.pack(fill="x")
         tk.Label(hdr, text="Download History", font=T.F_TITLE, bg=T.BG,
                  fg=T.TEXT).pack(side="left")
+        self._settings_panel = PageSettingsPanel(p, "history", self.app, [
+            ("history_limit", "Max Entries Shown", "int", 300, {"min": 100, "max": 2000}),
+            ("sort_by", "Sort By", "choice", "date_desc", {"choices": ["date_desc", "date_asc", "title", "source"]}),
+        ])
+        self._gear = GearButton(hdr, self._settings_panel)
+        self._gear.pack(side="right")
         ClassicBtn(hdr, "Open File", self._open_file).pack(side="right", padx=(4, 0))
         ClassicBtn(hdr, "Redownload", self._redown_sel).pack(side="right", padx=(4, 0))
         ClassicBtn(hdr, "Batch Rename", self._batch_rename).pack(

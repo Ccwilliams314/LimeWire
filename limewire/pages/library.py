@@ -14,7 +14,7 @@ from limewire.core.config import (
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (
     ClassicBtn, LimeBtn, OrangeBtn, GroupBox, ClassicEntry,
-    ClassicCombo, ClassicProgress,
+    ClassicCombo, ClassicProgress, PageSettingsPanel, GearButton,
 )
 from limewire.ui.toast import show_toast
 from limewire.services.cover_art import extract_cover_art
@@ -52,6 +52,11 @@ class LibraryPage(ScrollFrame):
         sg.pack(fill="x", padx=10, pady=(10, 6))
         sr = tk.Frame(sg, bg=T.BG)
         sr.pack(fill="x")
+        self._settings_panel = PageSettingsPanel(p, "library", self.app, [
+            ("scan_batch_size", "Scan Batch Size", "int", 50, {"min": 25, "max": 200}),
+        ])
+        self._gear = GearButton(sr, self._settings_panel)
+        self._gear.pack(side="right")
         self._folder_var = tk.StringVar()
         ClassicEntry(sr, self._folder_var, width=50).pack(side="left", fill="x", expand=True, padx=(0, 6))
         ClassicBtn(sr, "Browse", self._browse_folder).pack(side="left", padx=(0, 6))

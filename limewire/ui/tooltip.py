@@ -2,7 +2,7 @@
 import tkinter as tk
 
 from limewire.core.theme import T
-from limewire.core.constants import SP_SM, SP_MD
+from limewire.core.constants import S, SP_SM, SP_MD
 
 
 class ToolTip:
@@ -41,10 +41,10 @@ class ToolTip:
         f = tk.Frame(tw, bg=T.SURFACE, padx=SP_MD, pady=SP_SM)
         f.pack(fill="both", expand=True, padx=1, pady=1)
         tk.Label(f, text=self._text, font=T.F_SMALL, bg=T.SURFACE,
-                 fg=T.TEXT, wraplength=280, justify="left").pack()
+                 fg=T.TEXT, wraplength=S(280), justify="left").pack()
         tw.update_idletasks()
         x = (self._w.winfo_rootx() + self._w.winfo_width() // 2
              - tw.winfo_width() // 2)
-        y = self._w.winfo_rooty() + self._w.winfo_height() + 6
+        y = self._w.winfo_rooty() + self._w.winfo_height() + S(6)
         tw.geometry(f"+{x}+{y}")
         self._tw = tw

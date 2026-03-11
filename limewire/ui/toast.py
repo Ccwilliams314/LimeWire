@@ -2,7 +2,7 @@
 import tkinter as tk
 
 from limewire.core.theme import T, _lerp_color
-from limewire.core.constants import SP_SM, SP_MD, SP_LG
+from limewire.core.constants import S, SP_SM, SP_MD, SP_LG
 
 
 class _ToastManager:
@@ -39,7 +39,7 @@ class _ToastManager:
             try:
                 w = t.winfo_width()
                 tx = pw - w - SP_LG
-                ty = py + 56 + i * 58
+                ty = py + S(56) + i * S(58)
                 t._target_x = tx
                 t._y = ty
             except Exception:
@@ -66,10 +66,10 @@ class _Toast(tk.Toplevel):
         row = tk.Frame(inner, bg=_bg)
         row.pack(fill="x", padx=SP_LG, pady=SP_MD)
         ico = icon or "\u2713"
-        tk.Label(row, text=ico, font=("Segoe UI Symbol", 16),
+        tk.Label(row, text=ico, font=("Segoe UI Symbol", S(16)),
                  bg=_bg, fg=_fg).pack(side="left", padx=(0, SP_MD))
         tk.Label(row, text=msg, font=T.F_BOLD, bg=_bg, fg=_fg,
-                 wraplength=350, justify="left").pack(side="left", fill="x")
+                 wraplength=S(350), justify="left").pack(side="left", fill="x")
         close_btn = tk.Label(row, text="\u2715", font=T.F_CAPTION, bg=_bg,
                              fg=_lerp_color(_fg, _bg, 0.4), cursor="hand2")
         close_btn.pack(side="right", padx=(SP_SM, 0))
@@ -80,8 +80,8 @@ class _Toast(tk.Toplevel):
         w = self.winfo_width()
         idx = len(mgr._stack) if mgr else 0
         self._target_x = pw - w - SP_LG
-        self._start_x = pw + 10
-        self._y = py + 56 + idx * 58
+        self._start_x = pw + S(10)
+        self._y = py + S(56) + idx * S(58)
         self.geometry(f"+{self._start_x}+{self._y}")
         self._slide_in()
         self.after(duration, self._fade_out)

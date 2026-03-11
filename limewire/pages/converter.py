@@ -9,7 +9,7 @@ from limewire.core.deps import HAS_FFMPEG
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, GroupBox,
                                   ClassicEntry, ClassicCombo, ClassicListbox,
-                                  ClassicProgress)
+                                  ClassicProgress, PageSettingsPanel, GearButton)
 
 
 class ConverterPage(ScrollFrame):
@@ -20,6 +20,17 @@ class ConverterPage(ScrollFrame):
     def _build(self, p):
         ig = GroupBox(p, "Input Files"); ig.pack(fill="x", padx=10, pady=(10, 6))
         ir = tk.Frame(ig, bg=T.BG); ir.pack(fill="x", pady=(0, 6))
+        # -- Settings panel (hidden by default) --
+        self._settings_panel = PageSettingsPanel(p, "converter", self.app, [
+            ("sample_rate", "Sample Rate", "choice", "keep",
+             {"choices": ["keep", "44100", "48000", "96000"]}),
+            ("channels", "Channels", "choice", "keep",
+             {"choices": ["keep", "mono", "stereo"]}),
+            ("normalize_tp", "True Peak (dB)", "float", -1.5, {"min": -6.0, "max": 0.0, "increment": 0.5}),
+            ("normalize_lra", "Loudness Range", "float", 11.0, {"min": 5.0, "max": 20.0, "increment": 1.0}),
+        ])
+        self._gear = GearButton(ir, self._settings_panel)
+        self._gear.pack(side="right")
         LimeBtn(ir, "+ Add Files", self._add).pack(side="left", padx=(0, 4))
         ClassicBtn(ir, "Clear", self._clr).pack(side="left")
         self.fcnt = tk.Label(ir, text="0 files", font=T.F_BODY, bg=T.BG, fg=T.TEXT_DIM)

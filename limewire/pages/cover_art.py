@@ -11,7 +11,7 @@ from PIL import Image, ImageTk
 
 from limewire.core.theme import T
 from limewire.ui.scroll_frame import ScrollFrame
-from limewire.ui.widgets import ClassicBtn, LimeBtn, OrangeBtn, GroupBox, ClassicEntry, ClassicProgress
+from limewire.ui.widgets import ClassicBtn, LimeBtn, OrangeBtn, GroupBox, ClassicEntry, ClassicProgress, PageSettingsPanel, GearButton
 from limewire.ui.toast import show_toast
 from limewire.services.cover_art import (
     extract_cover_art, embed_cover_art, prepare_cover_image,
@@ -38,6 +38,12 @@ class CoverArtPage(ScrollFrame):
         fg.pack(fill="x", padx=10, pady=(10, 6))
         fr = tk.Frame(fg, bg=T.BG)
         fr.pack(fill="x")
+        self._settings_panel = PageSettingsPanel(p, "coverart", self.app, [
+            ("art_display_size", "Display Size (px)", "choice", "200", {"choices": ["150", "200", "300"]}),
+            ("art_fetch_resolution", "Fetch Resolution (px)", "choice", "500", {"choices": ["300", "500", "600", "1000"]}),
+        ])
+        self._gear = GearButton(fr, self._settings_panel)
+        self._gear.pack(side="right")
         self.file_var = tk.StringVar()
         ClassicEntry(fr, self.file_var, width=50).pack(side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
         ClassicBtn(fr, "Browse File", self._browse_file).pack(side="left", padx=(0, 4))

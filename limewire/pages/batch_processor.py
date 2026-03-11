@@ -9,7 +9,8 @@ from limewire.core.deps import _ensure_pydub, HAS_PYDUB, HAS_FFMPEG
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
                                   ClassicEntry, ClassicCombo, ClassicCheck,
-                                  ClassicListbox, ClassicProgress)
+                                  ClassicListbox, ClassicProgress,
+                                  PageSettingsPanel, GearButton)
 
 
 class BatchProcessorPage(ScrollFrame):
@@ -22,6 +23,12 @@ class BatchProcessorPage(ScrollFrame):
         tk.Label(fg,text="Add audio files for bulk processing.",
                  font=T.F_BODY,bg=T.BG,fg=T.TEXT_DIM).pack(anchor="w",pady=(0,SP_XS))
         bf=tk.Frame(fg,bg=T.BG); bf.pack(fill="x")
+        self._settings_panel=PageSettingsPanel(p,"batch",self.app,[
+            ("silence_threshold_db","Silence Threshold (dBFS)","int",-50,{"min":-70,"max":-20}),
+            ("fade_curve","Fade Curve","choice","linear",{"choices":["linear","exponential","logarithmic"]}),
+        ])
+        self._gear=GearButton(bf,self._settings_panel)
+        self._gear.pack(side="right")
         LimeBtn(bf,"Add Files",self._add_files).pack(side="left",padx=(0,SP_SM))
         ClassicBtn(bf,"Add Folder",self._add_folder).pack(side="left",padx=(0,SP_SM))
         ClassicBtn(bf,"Clear",self._clear_files).pack(side="left")

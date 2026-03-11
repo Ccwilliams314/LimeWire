@@ -4,6 +4,7 @@ from tkinter import ttk
 
 from limewire.core.theme import T, _lerp_color
 from limewire.core.constants import SP_XS, SP_SM, SP_MD, SP_LG
+from limewire.core.settings_registry import get_page_setting, set_page_setting
 
 
 def _round_rect(cv, x1, y1, x2, y2, radius=10, **kw):
@@ -108,7 +109,7 @@ class ModernBtn(tk.Canvas):
             if st == "disabled":
                 self.itemconfig(self._rect, fill=T.SURFACE_2)
                 self.itemconfig(self._label,
-                                fill=_lerp_color(T.TEXT_DIM, T.BG, 0.3))
+                                fill=_lerp_color(T.TEXT_DIM, T.BG, 0.12))
                 self.itemconfig(self._outline, outline=T.DIVIDER)
                 self.unbind("<Enter>"); self.unbind("<Leave>")
                 self.unbind("<ButtonPress-1>"); self.unbind("<ButtonRelease-1>")
@@ -213,3 +214,131 @@ def ClassicProgress(parent, thin=False):
 
 def HSep(parent):
     tk.Frame(parent, bg=T.DIVIDER, height=1).pack(fill="x", pady=SP_SM)
+
+
+# ── Per-page settings infrastructure ────────────────────────────────────────
+
+class PageSettingsPanel(tk.Frame):
+    """Collapsible inline settings panel for per-page configuration.
+
+    specs: list of (key, label, widget_type, default, options)
+        widget_type: "bool", "int", "float", "str", "choice"
+        options: dict with optional keys:
+            choices: list of values (for "choice")
+            min/max: numeric bounds (for "int"/"float")
+    """
+
+    def __init__(self, parent, page_key, app, specs):
+        super().__init__(parent, bg=T.CARD_BG, highlightthickness=1,
+                         highlightbackground=T.CARD_BORDER,
+                         highlightcolor=T.CARD_BORDER)
+        self._page_key = page_key
+        self._app = app
+        self._specs = specs
+        self._vars = {}
+        self._defaults = {s[0]: s[3] for s in specs}
+
+        header = tk.Frame(self, bg=T.CARD_BG)
+        header.pack(fill="x", padx=SP_SM, pady=(SP_XS, 0))
+        tk.Label(header, text="\u2699  Page Settings", font=T.F_BOLD,
+                 bg=T.CARD_BG, fg=T.TEXT_DIM).pack(side="left")
+
+        for key, label, wtype, default, opts in specs:
+            self._build_row(key, label, wtype, default, opts or {})
+
+    def _build_row(self, key, label, wtype, default, opts):
+        row = tk.Frame(self, bg=T.CARD_BG)
+        row.pack(fill="x", padx=SP_MD, pady=(0, 3))
+        tk.Label(row, text=f"{label}:", font=T.F_BODY, bg=T.CARD_BG,
+                 fg=T.TEXT, width=20, anchor="w").pack(side="left")
+
+        saved = get_page_setting(self._app.settings, self._page_key, key)
+        val = saved if saved is not None else default
+
+        if wtype == "bool":
+            var = tk.BooleanVar(value=bool(val))
+            tk.Checkbutton(row, variable=var, bg=T.CARD_BG,
+                           activebackground=T.CARD_BG, selectcolor=T.SURFACE_2,
+                           command=lambda k=key, v=var: self._on_change(k, v.get())
+                           ).pack(side="left")
+        elif wtype == "choice":
+            var = tk.StringVar(value=str(val))
+            cb = ttk.Combobox(row, textvariable=var,
+                              values=opts.get("choices", []),
+                              state="readonly", width=14, font=T.F_BODY)
+            cb.pack(side="left", padx=(4, 0))
+            cb.bind("<<ComboboxSelected>>",
+                    lambda e, k=key, v=var: self._on_change(k, v.get()))
+        elif wtype in ("int", "float"):
+            var = tk.StringVar(value=str(val))
+            mn = opts.get("min", 0)
+            mx = opts.get("max", 99999)
+            sb = tk.Spinbox(row, textvariable=var, from_=mn, to=mx,
+                            width=8, font=T.F_BODY, bg=T.INPUT_BG,
+                            fg=T.TEXT, buttonbackground=T.SURFACE_2,
+                            relief="flat", bd=0, highlightthickness=1,
+                            highlightbackground=T.INPUT_BORDER)
+            if wtype == "float":
+                sb.config(increment=opts.get("increment", 0.1))
+            sb.pack(side="left", padx=(4, 0))
+            sb.bind("<Return>",
+                    lambda e, k=key, v=var, t=wtype: self._on_num_change(k, v, t))
+            sb.bind("<FocusOut>",
+                    lambda e, k=key, v=var, t=wtype: self._on_num_change(k, v, t))
+            sb.bind("<<Increment>>",
+                    lambda e, k=key, v=var, t=wtype: self.after(10, lambda: self._on_num_change(k, v, t)))
+            sb.bind("<<Decrement>>",
+                    lambda e, k=key, v=var, t=wtype: self.after(10, lambda: self._on_num_change(k, v, t)))
+        else:  # str
+            var = tk.StringVar(value=str(val))
+            e = tk.Entry(row, textvariable=var, font=T.F_BODY, bg=T.INPUT_BG,
+                         fg=T.TEXT, relief="flat", bd=0, width=20,
+                         insertbackground=T.LIME, highlightthickness=1,
+                         highlightbackground=T.INPUT_BORDER)
+            e.pack(side="left", padx=(4, 0))
+            e.bind("<Return>",
+                   lambda ev, k=key, v=var: self._on_change(k, v.get()))
+            e.bind("<FocusOut>",
+                   lambda ev, k=key, v=var: self._on_change(k, v.get()))
+
+        self._vars[key] = var
+
+    def _on_change(self, key, value):
+        set_page_setting(self._app.settings, self._page_key, key, value)
+        self._app._save_settings()
+
+    def _on_num_change(self, key, var, typ):
+        try:
+            val = int(var.get()) if typ == "int" else float(var.get())
+        except (ValueError, tk.TclError):
+            val = self._defaults[key]
+            var.set(str(val))
+        self._on_change(key, val)
+
+    def get(self, key):
+        """Get current value of a page setting."""
+        return get_page_setting(self._app.settings, self._page_key, key)
+
+
+def GearButton(parent, panel):
+    """Small gear icon button that toggles a PageSettingsPanel's visibility."""
+    visible = [False]
+
+    def _toggle():
+        if visible[0]:
+            panel.pack_forget()
+            visible[0] = False
+        else:
+            panel.pack(fill="x", padx=10, pady=(0, 6), before=_find_next(panel))
+            visible[0] = True
+
+    def _find_next(widget):
+        """Find the widget packed after the gear button's parent row."""
+        return None  # pack at end; each page controls placement
+
+    btn = ModernBtn(parent, text="\u2699", command=_toggle,
+                    bg_color=T.SURFACE_2, fg_color=T.TEXT_DIM,
+                    hover_color=T.BTN_HOVER, padx=8, pady=4, radius=6)
+    btn._panel = panel
+    btn._toggle = _toggle
+    return btn

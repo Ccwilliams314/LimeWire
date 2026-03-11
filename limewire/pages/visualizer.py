@@ -10,7 +10,7 @@ from limewire.core.constants import (
 )
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
-from limewire.ui.widgets import ClassicBtn, LimeBtn, GroupBox, ClassicCombo
+from limewire.ui.widgets import ClassicBtn, LimeBtn, GroupBox, ClassicCombo, PageSettingsPanel, GearButton
 from limewire.services.audio_processing import compute_frequency_profile
 
 
@@ -81,6 +81,13 @@ class VisualizerPage(ScrollFrame):
         cg.pack(fill="x", padx=10, pady=(10, 6))
         cr = tk.Frame(cg, bg=T.BG)
         cr.pack(fill="x")
+
+        self._settings_panel = PageSettingsPanel(p, "visualizer", self.app, [
+            ("bar_count", "Bar Count", "choice", "64", {"choices": ["32", "64", "128"]}),
+            ("particle_count", "Particle Count", "choice", "200", {"choices": ["100", "200", "400"]}),
+        ])
+        self._gear = GearButton(cr, self._settings_panel)
+        self._gear.pack(side="right")
 
         tk.Label(cr, text="Mode:", font=T.F_SMALL, bg=T.BG, fg=T.TEXT).pack(side="left")
         self._mode_var = tk.StringVar(value="Bars")
