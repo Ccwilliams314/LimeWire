@@ -87,11 +87,11 @@ class TestApplyTheme:
         assert hasattr(T, "DIVIDER")
         assert hasattr(T, "FOCUS_RING")
 
-    def test_all_13_themes_exist(self):
-        assert len(THEMES) == 13
+    def test_all_themes_exist(self):
+        assert len(THEMES) == 15
         expected = {"livewire", "light", "dark", "modern", "synthwave", "dracula",
                     "catppuccin", "tokyo", "spotify", "classic", "nord", "gruvbox",
-                    "highcontrast"}
+                    "highcontrast", "oldschool", "electric"}
         assert set(THEMES.keys()) == expected
 
 

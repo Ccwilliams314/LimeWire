@@ -20,7 +20,8 @@ class SettingsPage(ScrollFrame):
         tk.Label(tr,text="Theme:",font=T.F_BOLD,bg=T.BG,fg=T.TEXT).pack(side="left")
         _theme_display=["LiveWire","Classic Light","Classic Dark","Modern Dark",
             "Synthwave","Dracula","Catppuccin","Tokyo Night","Spotify",
-            "LimeWire Classic","Nord","Gruvbox","High Contrast"]
+            "LimeWire Classic","Nord","Gruvbox","High Contrast",
+            "Old School","Electric"]
         self._theme_var=tk.StringVar()
         self._theme_combo=ttk.Combobox(tr,textvariable=self._theme_var,
             values=_theme_display,state="readonly",width=18,font=T.F_BODY)

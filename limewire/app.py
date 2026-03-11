@@ -503,7 +503,7 @@ class App(tk.Tk):
             f"v2.0: Plugin system, VST3/AU hosting, MIDI mapping,\n"
             f"cloud sync, auto-update, SoundCloud/Bandcamp search,\n"
             f"Discord RPC, keyboard customization, arrow seek,\n"
-            f"13 themes + community themes, 6 languages.\n\n"
+            f"15 themes + community themes, 6 languages.\n\n"
             f"Optional: pip install librosa pyloudnorm demucs pydub\n"
             f"  sounddevice pyrubberband openai-whisper shazamio pypresence mido\n\n"
             f"\"Definitely virus-free since 2024\""))
@@ -536,13 +536,13 @@ class App(tk.Tk):
                             outline=_lerp_color(T.ACCENT_START, "#FFFFFF", 0.3), width=2, tags="fg")
             bar.create_oval(cx - 13, cy - 13, cx + 13, cy + 13,
                             fill=_lerp_color(T.ACCENT_START, "#000000", 0.2), outline="", tags="fg")
-            bar.create_text(cx, cy, text="\u26A1", font=("Segoe UI", 14), fill="#FFFFFF", tags="fg")
+            bar.create_text(cx, cy, text=T.LOGO_ICON, font=("Segoe UI", 14), fill="#FFFFFF", tags="fg")
             tx = 56
             ty = LOGO_H // 2
-            bar.create_text(tx + 1, ty + 1, text="LimeWire", font=T.F_LOGO,
+            bar.create_text(tx + 1, ty + 1, text=T.LOGO_TEXT, font=T.F_LOGO,
                             fill=_lerp_color(T.ACCENT_END, "#000000", 0.5), anchor="w", tags="fg")
-            bar.create_text(tx, ty, text="LimeWire", font=T.F_LOGO, fill="#FFFFFF", anchor="w", tags="fg")
-            bx = 200
+            bar.create_text(tx, ty, text=T.LOGO_TEXT, font=T.F_LOGO, fill="#FFFFFF", anchor="w", tags="fg")
+            bx = 230 if len(T.LOGO_TEXT) > 10 else 200
             by = LOGO_H // 2
             _round_rect(bar, bx, by - 11, bx + 82, by + 11, radius=11,
                         fill=_lerp_color(T.ACCENT_START, "#000000", 0.35),
@@ -618,6 +618,7 @@ class App(tk.Tk):
             "LiveWire", "Classic Light", "Classic Dark", "Modern Dark",
             "Synthwave", "Dracula", "Catppuccin", "Tokyo Night", "Spotify",
             "LimeWire Classic", "Nord", "Gruvbox", "High Contrast",
+            "Old School", "Electric",
         ]
         _theme_keys = list(THEMES.keys())
         self._theme_name_map = dict(zip(_theme_display, _theme_keys))

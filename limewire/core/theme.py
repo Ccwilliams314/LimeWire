@@ -199,11 +199,48 @@ THEME_HIGHCONTRAST={
     "CANVAS_BG":"#000000",
     "BTN_PRESSED":"#222222","CARD_SHADOW":"#000000","DIVIDER":"#444444","FOCUS_RING":"#FFFF00",
 }
+THEME_OLDSCHOOL={
+    "BG":"#E8E8E0","BG_DARK":"#D4D4CC","PANEL":"#F0F0EA","WHITE":"#FFFFFF","BLACK":"#2A2A2A",
+    "TEXT":"#1A1A1A","TEXT_DIM":"#606060","TEXT_BLUE":"#006600",
+    "LIME":"#4CAF50","LIME_DK":"#388E3C","LIME_LT":"#81C784",
+    "BLUE_HL":"#388E3C","RED":"#D32F2F","YELLOW":"#FBC02D","ORANGE":"#F57C00",
+    "TOOLBAR":"#D8D8D0","BORDER_L":"#BDBDB5","BORDER_D":"#A0A098","INPUT_BG":"#FFFFFF","TROUGH":"#C8C8C0",
+    "CARD_BG":"#F5F5EF","CARD_BORDER":"#BDBDB5","BTN_HOVER":"#D0D0C8",
+    "LIME_HOVER":"#2E7D32","ORANGE_HOVER":"#E06500",
+    "INPUT_BORDER":"#BDBDB5","INPUT_FOCUS":"#4CAF50","TAB_ACTIVE":"#4CAF50",
+    "SUCCESS":"#4CAF50","WARNING":"#FBC02D","ERROR":"#D32F2F","INFO":"#1976D2",
+    "SURFACE":"#F0F0EA","SURFACE_2":"#E8E8E0","SURFACE_3":"#D4D4CC",
+    "ACCENT_START":"#4CAF50","ACCENT_END":"#2E7D32",
+    "CANVAS_BG":"#1A1A1A",
+    "BTN_PRESSED":"#C0C0B8","CARD_SHADOW":"#B0B0A8","DIVIDER":"#D0D0C8","FOCUS_RING":"#388E3C",
+}
+THEME_ELECTRIC={
+    "BG":"#0A0A0A","BG_DARK":"#050505","PANEL":"#141414","WHITE":"#1C1C1C","BLACK":"#020202",
+    "TEXT":"#FFF8E1","TEXT_DIM":"#8A7A50","TEXT_BLUE":"#FFD740",
+    "LIME":"#FFD600","LIME_DK":"#F9A825","LIME_LT":"#FFEE58",
+    "BLUE_HL":"#FF6D00","RED":"#FF1744","YELLOW":"#FFD600","ORANGE":"#FF9100",
+    "TOOLBAR":"#0E0E0E","BORDER_L":"#2A2200","BORDER_D":"#050505","INPUT_BG":"#141414","TROUGH":"#2A2200",
+    "CARD_BG":"#161208","CARD_BORDER":"#2A2200","BTN_HOVER":"#2A2200",
+    "LIME_HOVER":"#F9A825","ORANGE_HOVER":"#E07E00",
+    "INPUT_BORDER":"#2A2200","INPUT_FOCUS":"#FFD600","TAB_ACTIVE":"#FFD600",
+    "SUCCESS":"#AEEA00","WARNING":"#FF9100","ERROR":"#FF1744","INFO":"#FFEE58",
+    "SURFACE":"#141414","SURFACE_2":"#0A0A0A","SURFACE_3":"#050505",
+    "ACCENT_START":"#FFD600","ACCENT_END":"#FF6D00",
+    "CANVAS_BG":"#020202",
+    "BTN_PRESSED":"#1A1400","CARD_SHADOW":"#020202","DIVIDER":"#221C00","FOCUS_RING":"#FFD600",
+}
 
 THEMES={"livewire":THEME_LIVEWIRE,"light":THEME_LIGHT,"dark":THEME_DARK,"modern":THEME_MODERN,
         "synthwave":THEME_SYNTHWAVE,"dracula":THEME_DRACULA,"catppuccin":THEME_CATPPUCCIN,
         "tokyo":THEME_TOKYO,"spotify":THEME_SPOTIFY,"classic":THEME_CLASSIC,
-        "nord":THEME_NORD,"gruvbox":THEME_GRUVBOX,"highcontrast":THEME_HIGHCONTRAST}
+        "nord":THEME_NORD,"gruvbox":THEME_GRUVBOX,"highcontrast":THEME_HIGHCONTRAST,
+        "oldschool":THEME_OLDSCHOOL,"electric":THEME_ELECTRIC}
+
+# Per-theme branding (logo text and icon override)
+THEME_BRANDING = {
+    "electric": {"logo_text": "LiveWire Studio", "logo_icon": "\u26A1"},
+    "oldschool": {"logo_text": "LimeWire", "logo_icon": "\U0001F34B"},
+}
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # MUTABLE THEME NAMESPACE — all modules import T and use T.BG, T.TEXT, etc.
@@ -231,6 +268,7 @@ T.F_SECTION=("Segoe UI Semibold",11)
 T.F_H1=("Segoe UI Bold",26); T.F_H2=("Segoe UI Semibold",21)
 T.F_H3=("Segoe UI Semibold",17); T.F_H4=("Segoe UI Semibold",14)
 T.F_CAPTION=("Segoe UI",8); T.F_LABEL=("Segoe UI Semibold",9)
+T.LOGO_TEXT="LimeWire"; T.LOGO_ICON="\u26A1"
 
 # Allowed theme keys (security: prevents community themes from overwriting arbitrary attrs)
 _THEME_KEYS = frozenset(THEME_LIVEWIRE.keys())
@@ -267,3 +305,7 @@ def apply_theme(mode="livewire"):
     T.F_H1=("Segoe UI Bold",26); T.F_H2=("Segoe UI Semibold",21)
     T.F_H3=("Segoe UI Semibold",17); T.F_H4=("Segoe UI Semibold",14)
     T.F_CAPTION=("Segoe UI",8); T.F_LABEL=("Segoe UI Semibold",9)
+    # Per-theme branding
+    branding = THEME_BRANDING.get(mode, {})
+    T.LOGO_TEXT = branding.get("logo_text", "LimeWire")
+    T.LOGO_ICON = branding.get("logo_icon", "\u26A1")
