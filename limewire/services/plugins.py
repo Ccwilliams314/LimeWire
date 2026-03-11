@@ -1,5 +1,15 @@
-"""Plugin system — custom audio processors loaded from plugins directory."""
-import os, logging, importlib.util
+"""Plugin system — custom audio processors with hash-based trust.
+
+Plugins are discovered in ~/.limewire/plugins/ but NOT auto-executed.
+They must be explicitly approved by the user (stored by SHA-256 hash).
+"""
+
+import logging
+import os
+
+from limewire.security.plugin_policy import (
+    scan_plugins, load_trusted_plugin, PluginTrustError,
+)
 
 _log = logging.getLogger("LimeWire")
 
@@ -9,7 +19,7 @@ PLUGINS_DIR = os.path.join(os.path.expanduser("~"), ".limewire", "plugins")
 class PluginBase:
     """Base class for LimeWire audio processor plugins.
 
-    Subclass this and implement process(audio_data, sr, **params) → audio_data.
+    Subclass this and implement process(audio_data, sr, **params) -> audio_data.
     """
     name = "Unnamed Plugin"
     description = ""
@@ -22,29 +32,40 @@ class PluginBase:
 
 
 class PluginManager:
-    """Discovers, loads, and manages audio processor plugins."""
+    """Discovers, loads, and manages audio processor plugins.
+
+    Security: plugins are only loaded if their SHA-256 hash has been
+    explicitly approved by the user.  No auto-execution on discovery.
+    """
 
     def __init__(self):
-        self._plugins = {}   # name → plugin_instance
+        self._plugins = {}   # name -> plugin_instance
+        self._discovered = []  # list of PluginScan results
         self._errors = []
 
-    def discover(self):
-        """Scan plugins directory and load all .py plugin files."""
+    def discover(self, trusted_hashes: set[str] | None = None):
+        """Scan plugins directory — discover files without executing them.
+
+        Args:
+            trusted_hashes: Set of SHA-256 hashes the user has approved.
+                            Only plugins matching a trusted hash will be loaded.
+                            If None, discovery only (no loading).
+        """
         self._plugins = {}
         self._errors = []
-        os.makedirs(PLUGINS_DIR, exist_ok=True)
-        plugin_files = [fn for fn in os.listdir(PLUGINS_DIR)
-                        if fn.endswith(".py") and not fn.startswith("_")]
-        if not plugin_files:
+        self._discovered = scan_plugins(PLUGINS_DIR, trusted_hashes or set())
+
+        if trusted_hashes is None:
+            # Discovery only — no loading
             return
-        _log.info(f"Loading {len(plugin_files)} plugin(s) from {PLUGINS_DIR}")
-        for fn in plugin_files:
-            path = os.path.join(PLUGINS_DIR, fn)
+
+        for scan in self._discovered:
+            if not scan.trusted:
+                _log.info("[plugin] Skipping untrusted plugin: %s (hash=%s...)",
+                          scan.filename, scan.sha256[:16])
+                continue
             try:
-                spec = importlib.util.spec_from_file_location(fn[:-3], path)
-                mod = importlib.util.module_from_spec(spec)
-                _log.info(f"[PLUGIN] Loading: {path} (review before use)")
-                spec.loader.exec_module(mod)
+                mod = load_trusted_plugin(scan.path, scan.sha256)
                 # Find all PluginBase subclasses in the module
                 for attr_name in dir(mod):
                     attr = getattr(mod, attr_name)
@@ -52,12 +73,20 @@ class PluginManager:
                             and attr is not PluginBase):
                         inst = attr()
                         self._plugins[inst.name] = inst
-                        _log.info(f"Loaded plugin: {inst.name} from {fn}")
+                        _log.info("Loaded trusted plugin: %s from %s", inst.name, scan.filename)
+            except PluginTrustError as e:
+                self._errors.append((scan.filename, str(e)))
+                _log.warning("Plugin trust error for %s: %s", scan.filename, e)
             except Exception as e:
-                self._errors.append((fn, str(e)))
-                _log.warning(f"Failed to load plugin {fn}: {e}")
+                self._errors.append((scan.filename, str(e)))
+                _log.warning("Failed to load plugin %s: %s", scan.filename, e)
+
+    def get_discovered(self):
+        """Return list of PluginScan results (discovered but not necessarily loaded)."""
+        return list(self._discovered)
 
     def list_plugins(self):
+        """Return list of loaded (trusted) plugin instances."""
         return list(self._plugins.values())
 
     def get(self, name):
@@ -73,8 +102,5 @@ class PluginManager:
         return list(self._errors)
 
 
+# Singleton — discovery happens lazily when App calls discover()
 _plugin_manager = PluginManager()
-try:
-    _plugin_manager.discover()
-except Exception:
-    pass

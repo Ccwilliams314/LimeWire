@@ -11,9 +11,8 @@ from limewire.core.theme import T, _lerp_color
 from limewire.core.constants import (
     PLAYER_WAVEFORM_W, PLAYER_WAVEFORM_H, PLAYER_UPDATE_MS,
     EQ_BAR_COUNT, EQ_PEAK_DECAY, SP_LG, SP_XS,
-    ANALYSIS_CACHE_FILE,
 )
-from limewire.core.config import load_json, save_json
+from limewire.core.config import load_json, save_json, ANALYSIS_CACHE_FILE
 from limewire.core.audio_backend import _audio
 from limewire.ui.scroll_frame import ScrollFrame
 from limewire.ui.widgets import (ClassicBtn, LimeBtn, OrangeBtn, GroupBox,
