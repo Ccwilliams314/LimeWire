@@ -54,5 +54,18 @@ class AudioPlayer:
         return self._player.time if self._player else 0
 
 
-# Singleton
+class DJDeck(AudioPlayer):
+    """Extended AudioPlayer for DJ decks with speed/pitch tracking."""
+    def __init__(self):
+        super().__init__()
+        self._speed = 1.0
+
+    def set_speed(self, rate):
+        self._speed = rate
+        super().set_speed(rate)
+
+
+# Singletons
 _audio = AudioPlayer()
+_dj_deck_a = DJDeck()
+_dj_deck_b = DJDeck()

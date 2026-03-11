@@ -20,6 +20,10 @@ from limewire.pages.scheduler import SchedulerPage
 from limewire.pages.history import HistoryPage
 from limewire.pages.settings import SettingsPage
 from limewire.pages.cover_art import CoverArtPage
+from limewire.pages.lyrics import LyricsPage
+from limewire.pages.visualizer import VisualizerPage
+from limewire.pages.library import LibraryPage
+from limewire.pages.dj import DJPage
 
 __all__ = [
     "SearchPage", "AnalyzePage", "StemsPage", "DownloadPage",
@@ -28,4 +32,5 @@ __all__ = [
     "SpectrogramPage", "PitchTimePage", "RemixerPage",
     "BatchProcessorPage", "SchedulerPage", "HistoryPage",
     "SettingsPage", "CoverArtPage",
+    "LyricsPage", "VisualizerPage", "LibraryPage", "DJPage",
 ]

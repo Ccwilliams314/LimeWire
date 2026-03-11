@@ -23,6 +23,8 @@ QUEUE_FILE = _migrate_config("queue")
 ANALYSIS_CACHE_FILE = _migrate_config("analysis_cache")
 SESSION_FILE = _migrate_config("session")
 RECENT_FILES_FILE = _migrate_config("recent_files")
+LIBRARY_FILE = _migrate_config("library")
+SMART_PLAYLISTS_FILE = _migrate_config("smart_playlists")
 
 
 def load_json(p, d):

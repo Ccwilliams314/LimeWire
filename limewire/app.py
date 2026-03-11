@@ -49,6 +49,7 @@ from limewire.pages import (
     ConverterPage, PlayerPage, EffectsPage, DiscoveryPage, SamplesPage,
     EditorPage, RecorderPage, SpectrogramPage, PitchTimePage, RemixerPage,
     BatchProcessorPage, SchedulerPage, HistoryPage, SettingsPage, CoverArtPage,
+    LyricsPage, VisualizerPage, LibraryPage, DJPage,
 )
 
 
@@ -495,10 +496,11 @@ class App(tk.Tk):
             f"LimeWire v3.0.0 Studio Edition\n\n"
             f"The modern music utility for everything.\n"
             f"Powered by yt-dlp + Demucs + librosa + pydub\n\n"
-            f"20 pages: Search, Batch DL, Playlist, Convert, Player,\n"
-            f"Analyze, Stems, Effects, Discovery, Samples, Editor,\n"
-            f"Recorder, Spectrogram, Pitch/Time, Remixer, Batch Process,\n"
-            f"Scheduler, History, Cover Art, Settings\n\n"
+            f"24 pages: Search, Batch DL, Playlist, Convert, Player,\n"
+            f"Lyrics, Visualizer, Analyze, Stems, Effects, Discovery,\n"
+            f"Library, DJ, Samples, Editor, Recorder, Spectrogram,\n"
+            f"Pitch/Time, Remixer, Batch Process, Scheduler, History,\n"
+            f"Cover Art, Settings\n\n"
             f"Active modules: {cap_str}\n\n"
             f"v2.0: Plugin system, VST3/AU hosting, MIDI mapping,\n"
             f"cloud sync, auto-update, SoundCloud/Bandcamp search,\n"
@@ -675,10 +677,14 @@ class App(tk.Tk):
             ("playlist", "Playlist", PlaylistPage),
             ("converter", "Converter", ConverterPage),
             ("player", "Player", PlayerPage),
+            ("lyrics", "Lyrics", LyricsPage),
+            ("visualizer", "Visualizer", VisualizerPage),
             ("analyze", "Analyze", AnalyzePage),
             ("stems", "Stems", StemsPage),
             ("effects", "Effects", EffectsPage),
             ("discovery", "Discovery", DiscoveryPage),
+            ("library", "Library", LibraryPage),
+            ("dj", "DJ", DJPage),
             ("samples", "Samples", SamplesPage),
             ("editor", "Editor", EditorPage),
             ("recorder", "Recorder", RecorderPage),

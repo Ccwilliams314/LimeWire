@@ -73,5 +73,25 @@ URL_PATTERNS = [
     re.compile(r'https?://\S+\.\S+'),
 ]
 
+# ── Visualizer ────────────────────────────────────────────────────────────────
+VISUALIZER_UPDATE_MS = 33
+VISUALIZER_BAR_COUNT = 64
+VISUALIZER_PARTICLE_COUNT = 200
+
+# ── DJ ────────────────────────────────────────────────────────────────────────
+DJ_SPEED_RANGE = 0.08
+DJ_WAVEFORM_H = 60
+DJ_CROSSFADE_DEFAULT = 50
+
+# ── Lyrics ────────────────────────────────────────────────────────────────────
+LRC_OFFSET_RANGE = 5.0
+LYRICS_FONT_SIZE_DEFAULT = 14
+LYRICS_UPDATE_MS = 200
+
+# ── Library ───────────────────────────────────────────────────────────────────
+LIBRARY_SCAN_EXTS = frozenset({
+    ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac", ".opus", ".wma", ".aiff",
+})
+
 # ── Spacing ───────────────────────────────────────────────────────────────────
 SP_XS = 4; SP_SM = 8; SP_MD = 12; SP_LG = 16; SP_XL = 24; SP_2XL = 32
