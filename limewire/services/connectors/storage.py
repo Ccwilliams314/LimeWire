@@ -1,9 +1,16 @@
-"""SQLite persistence for linked accounts, track mappings, and transfer history."""
+"""SQLite persistence for linked accounts, track mappings, and transfer history.
+
+Security: Tokens are encrypted at rest using Windows DPAPI (CryptProtectData)
+when available, with a fallback obfuscation layer on other platforms.
+Client secrets are NOT stored — load from settings at runtime only.
+"""
 
 from __future__ import annotations
 
+import base64
 import os
 import sqlite3
+import sys
 import time
 import threading
 
@@ -12,12 +19,82 @@ DB_PATH = os.path.join(DB_DIR, "connectors.db")
 
 _local = threading.local()
 
+# ── Token encryption ─────────────────────────────────────────────────────────
+
+def _encrypt_token(plaintext: str) -> str:
+    """Encrypt a token for at-rest storage. Uses DPAPI on Windows."""
+    if not plaintext:
+        return ""
+    data = plaintext.encode("utf-8")
+    try:
+        if sys.platform == "win32":
+            import ctypes
+            import ctypes.wintypes
+
+            class DATA_BLOB(ctypes.Structure):
+                _fields_ = [("cbData", ctypes.wintypes.DWORD),
+                            ("pbData", ctypes.POINTER(ctypes.c_char))]
+
+            input_blob = DATA_BLOB(len(data), ctypes.create_string_buffer(data, len(data)))
+            output_blob = DATA_BLOB()
+            if ctypes.windll.crypt32.CryptProtectData(
+                ctypes.byref(input_blob), None, None, None, None, 0,
+                ctypes.byref(output_blob)
+            ):
+                encrypted = ctypes.string_at(output_blob.pbData, output_blob.cbData)
+                ctypes.windll.kernel32.LocalFree(output_blob.pbData)
+                return "dpapi:" + base64.b64encode(encrypted).decode("ascii")
+    except Exception:
+        pass
+    # Fallback: base64 obfuscation (not true encryption, but better than plaintext)
+    return "b64:" + base64.b64encode(data).decode("ascii")
+
+
+def _decrypt_token(stored: str) -> str:
+    """Decrypt a token from at-rest storage."""
+    if not stored:
+        return ""
+    if stored.startswith("dpapi:"):
+        try:
+            import ctypes
+            import ctypes.wintypes
+
+            class DATA_BLOB(ctypes.Structure):
+                _fields_ = [("cbData", ctypes.wintypes.DWORD),
+                            ("pbData", ctypes.POINTER(ctypes.c_char))]
+
+            encrypted = base64.b64decode(stored[6:])
+            input_blob = DATA_BLOB(len(encrypted),
+                                   ctypes.create_string_buffer(encrypted, len(encrypted)))
+            output_blob = DATA_BLOB()
+            if ctypes.windll.crypt32.CryptUnprotectData(
+                ctypes.byref(input_blob), None, None, None, None, 0,
+                ctypes.byref(output_blob)
+            ):
+                plaintext = ctypes.string_at(output_blob.pbData, output_blob.cbData)
+                ctypes.windll.kernel32.LocalFree(output_blob.pbData)
+                return plaintext.decode("utf-8")
+        except Exception:
+            return ""
+    elif stored.startswith("b64:"):
+        try:
+            return base64.b64decode(stored[4:]).decode("utf-8")
+        except Exception:
+            return ""
+    # Legacy plaintext (from before encryption was added) — read as-is
+    return stored
+
+
+# ── Database ──────────────────────────────────────────────────────────────────
 
 def _get_db() -> sqlite3.Connection:
     """Get a thread-local database connection."""
     conn = getattr(_local, "conn", None)
     if conn is None:
         os.makedirs(DB_DIR, exist_ok=True)
+        # Restrict directory permissions (user-only on Unix)
+        if sys.platform != "win32":
+            os.chmod(DB_DIR, 0o700)
         conn = sqlite3.connect(DB_PATH, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
@@ -33,8 +110,6 @@ def init_db():
             service       TEXT PRIMARY KEY,
             access_token  TEXT DEFAULT '',
             refresh_token TEXT DEFAULT '',
-            client_id     TEXT DEFAULT '',
-            client_secret TEXT DEFAULT '',
             token_expiry  REAL DEFAULT 0,
             user_id       TEXT DEFAULT '',
             user_name     TEXT DEFAULT '',
@@ -64,34 +139,58 @@ def init_db():
             timestamp       REAL DEFAULT 0
         );
     """)
+    # Migration: drop client_id/client_secret columns if they exist (old schema)
+    try:
+        cols = [r[1] for r in db.execute("PRAGMA table_info(linked_accounts)").fetchall()]
+        if "client_id" in cols or "client_secret" in cols:
+            # SQLite doesn't support DROP COLUMN before 3.35 — recreate table
+            db.executescript("""
+                CREATE TABLE IF NOT EXISTS _la_new (
+                    service       TEXT PRIMARY KEY,
+                    access_token  TEXT DEFAULT '',
+                    refresh_token TEXT DEFAULT '',
+                    token_expiry  REAL DEFAULT 0,
+                    user_id       TEXT DEFAULT '',
+                    user_name     TEXT DEFAULT '',
+                    linked_at     REAL DEFAULT 0
+                );
+                INSERT OR IGNORE INTO _la_new (service, access_token, refresh_token,
+                    token_expiry, user_id, user_name, linked_at)
+                SELECT service, access_token, refresh_token,
+                    token_expiry, user_id, user_name, linked_at
+                FROM linked_accounts;
+                DROP TABLE linked_accounts;
+                ALTER TABLE _la_new RENAME TO linked_accounts;
+            """)
+    except Exception:
+        pass
     db.commit()
 
 
 # ── Linked accounts ──────────────────────────────────────────────────────────
 
 def save_account(service: str, tokens: dict):
-    """Save or update a linked account."""
+    """Save or update a linked account. Tokens are encrypted at rest.
+
+    NOTE: client_id and client_secret are NOT stored — load from settings only.
+    """
     db = _get_db()
     db.execute("""
         INSERT INTO linked_accounts
-            (service, access_token, refresh_token, client_id, client_secret,
+            (service, access_token, refresh_token,
              token_expiry, user_id, user_name, linked_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(service) DO UPDATE SET
             access_token  = excluded.access_token,
             refresh_token = excluded.refresh_token,
-            client_id     = excluded.client_id,
-            client_secret = excluded.client_secret,
             token_expiry  = excluded.token_expiry,
             user_id       = excluded.user_id,
             user_name     = excluded.user_name,
             linked_at     = excluded.linked_at
     """, (
         service,
-        tokens.get("access_token", ""),
-        tokens.get("refresh_token", ""),
-        tokens.get("client_id", ""),
-        tokens.get("client_secret", ""),
+        _encrypt_token(tokens.get("access_token", "")),
+        _encrypt_token(tokens.get("refresh_token", "")),
         tokens.get("token_expiry", 0),
         tokens.get("user_id", ""),
         tokens.get("user_name", ""),
@@ -101,12 +200,15 @@ def save_account(service: str, tokens: dict):
 
 
 def load_account(service: str) -> dict | None:
-    """Load a linked account. Returns dict or None."""
+    """Load a linked account. Tokens are decrypted from at-rest encryption."""
     db = _get_db()
     row = db.execute("SELECT * FROM linked_accounts WHERE service = ?", (service,)).fetchone()
     if row is None:
         return None
-    return dict(row)
+    d = dict(row)
+    d["access_token"] = _decrypt_token(d.get("access_token", ""))
+    d["refresh_token"] = _decrypt_token(d.get("refresh_token", ""))
+    return d
 
 
 def remove_account(service: str):
@@ -117,10 +219,16 @@ def remove_account(service: str):
 
 
 def list_linked_accounts() -> list[dict]:
-    """List all linked accounts."""
+    """List all linked accounts (tokens decrypted)."""
     db = _get_db()
     rows = db.execute("SELECT * FROM linked_accounts ORDER BY service").fetchall()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        d["access_token"] = _decrypt_token(d.get("access_token", ""))
+        d["refresh_token"] = _decrypt_token(d.get("refresh_token", ""))
+        out.append(d)
+    return out
 
 
 # ── Track mappings ───────────────────────────────────────────────────────────

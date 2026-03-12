@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from urllib.parse import urlencode
@@ -9,13 +10,21 @@ from urllib.parse import urlencode
 import requests
 
 from .base import ConnectorBase, TrackResult, PlaylistResult
-from .oauth import REDIRECT_URI, start_oauth_flow
+from .oauth import REDIRECT_URI, start_oauth_flow, generate_state, _sanitize_error
 from .storage import save_account, load_account
 
 API = "https://api.deezer.com"
 AUTH_URL = "https://connect.deezer.com/oauth/auth.php"
 TOKEN_URL = "https://connect.deezer.com/oauth/access_token.php"
 PERMS = "basic_access,manage_library,offline_access"
+
+_DEEZER_ID_RE = re.compile(r"^\d{1,20}$")
+MAX_TRACKS = 10000
+
+
+def _valid_id(did: str) -> bool:
+    """Validate a Deezer numeric ID."""
+    return bool(_DEEZER_ID_RE.match(str(did)))
 
 
 class DeezerConnector(ConnectorBase):
@@ -38,17 +47,20 @@ class DeezerConnector(ConnectorBase):
     def is_authenticated(self) -> bool:
         return bool(self._access_token)
 
-    # ── OAuth ────────────────────────────────────────────────────────────────
+    # ── OAuth (with state for CSRF) ──────────────────────────────────────────
 
     def start_auth(self) -> dict | None:
         if not self._app_id:
             return {"error": "Set deezer_app_id in Settings first"}
+        state = generate_state()
         params = urlencode({
             "app_id": self._app_id,
             "redirect_uri": REDIRECT_URI,
             "perms": PERMS,
+            "state": state,
         })
-        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120)
+        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120,
+                                  expected_state=state)
         if not result or "code" not in result:
             return {"error": "OAuth cancelled or timed out"}
         # Deezer token exchange is GET-based, returns text not JSON
@@ -62,7 +74,7 @@ class DeezerConnector(ConnectorBase):
             r.raise_for_status()
             tokens = r.json()
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
         if "access_token" not in tokens:
             return {"error": tokens.get("error_reason", "Token exchange failed")}
         self._access_token = tokens["access_token"]
@@ -98,7 +110,7 @@ class DeezerConnector(ConnectorBase):
                 return {"error": data["error"].get("message", str(data["error"]))}
             return data
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
 
     # ── Track parsing ────────────────────────────────────────────────────────
 
@@ -121,12 +133,15 @@ class DeezerConnector(ConnectorBase):
     # ── Public interface ─────────────────────────────────────────────────────
 
     def search(self, query: str, limit: int = 10) -> list[TrackResult]:
+        limit = min(limit, 50)
         data = self._api_get("/search", {"q": query, "limit": limit})
         if "error" in data:
             return []
         return [self._parse_track(t) for t in data.get("data", [])]
 
     def get_track(self, track_id: str) -> TrackResult | None:
+        if not _valid_id(track_id):
+            return None
         data = self._api_get(f"/track/{track_id}")
         if "error" in data:
             return None
@@ -136,18 +151,19 @@ class DeezerConnector(ConnectorBase):
         pid = playlist_id_or_url
         # Extract ID from URL
         if "deezer.com" in pid:
-            import re
             m = re.search(r"playlist/(\d+)", pid)
             if m:
                 pid = m.group(1)
             else:
                 return None
+        if not _valid_id(pid):
+            return None
 
         data = self._api_get(f"/playlist/{pid}")
         if "error" in data:
             return None
 
-        tracks = [self._parse_track(t) for t in data.get("tracks", {}).get("data", [])]
+        tracks = [self._parse_track(t) for t in data.get("tracks", {}).get("data", [])[:MAX_TRACKS]]
         return PlaylistResult(
             service="deezer",
             playlist_id=str(data.get("id", pid)),
@@ -179,6 +195,8 @@ class DeezerConnector(ConnectorBase):
     def create_playlist(self, name: str, description: str = "") -> str | None:
         if not self._access_token or not self._user_id:
             return None
+        if not _valid_id(self._user_id):
+            return None
         try:
             r = requests.post(
                 f"{API}/user/{self._user_id}/playlists",
@@ -194,15 +212,20 @@ class DeezerConnector(ConnectorBase):
     def add_tracks(self, playlist_id: str, track_ids: list[str]) -> int:
         if not self._access_token:
             return 0
+        if not _valid_id(playlist_id):
+            return 0
+        valid_ids = [tid for tid in track_ids if _valid_id(tid)]
+        if not valid_ids:
+            return 0
         try:
             r = requests.post(
                 f"{API}/playlist/{playlist_id}/tracks",
                 params=self._params(),
-                data={"songs": ",".join(track_ids)},
+                data={"songs": ",".join(valid_ids)},
                 timeout=20,
             )
             r.raise_for_status()
-            return len(track_ids) if r.json() is True else 0
+            return len(valid_ids) if r.json() is True else 0
         except Exception:
             return 0
 
@@ -212,18 +235,21 @@ class DeezerConnector(ConnectorBase):
     # ── Liked songs ──────────────────────────────────────────────────────────
 
     def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        limit = min(limit, 5000)
         if not self._access_token:
             return []
-        data = self._api_get("/user/me/tracks", {"limit": limit})
+        data = self._api_get("/user/me/tracks", {"limit": min(limit, 200)})
         if "error" in data:
             return []
-        return [self._parse_track(t) for t in data.get("data", [])]
+        return [self._parse_track(t) for t in data.get("data", [])[:limit]]
 
     def add_to_liked(self, track_ids: list[str]) -> int:
         if not self._access_token:
             return 0
         added = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.post(
                     f"{API}/user/me/tracks",
@@ -241,6 +267,8 @@ class DeezerConnector(ConnectorBase):
             return 0
         removed = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.delete(
                     f"{API}/user/me/tracks",
@@ -256,16 +284,19 @@ class DeezerConnector(ConnectorBase):
     # ── Followed artists ─────────────────────────────────────────────────────
 
     def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         if not self._access_token:
             return []
-        data = self._api_get("/user/me/artists", {"limit": limit})
+        data = self._api_get("/user/me/artists", {"limit": min(limit, 200)})
         if "error" in data:
             return []
         return [{"id": str(a.get("id", "")), "name": a.get("name", ""),
-                 "url": a.get("link", "")} for a in data.get("data", [])]
+                 "url": a.get("link", "")} for a in data.get("data", [])[:limit]]
 
     def follow_artist(self, artist_id: str) -> bool:
         if not self._access_token:
+            return False
+        if not _valid_id(artist_id):
             return False
         try:
             r = requests.post(
@@ -280,17 +311,20 @@ class DeezerConnector(ConnectorBase):
     # ── Saved albums ─────────────────────────────────────────────────────────
 
     def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         if not self._access_token:
             return []
-        data = self._api_get("/user/me/albums", {"limit": limit})
+        data = self._api_get("/user/me/albums", {"limit": min(limit, 200)})
         if "error" in data:
             return []
         return [{"id": str(a.get("id", "")), "title": a.get("title", ""),
                  "artist": (a.get("artist") or {}).get("name", ""),
-                 "url": a.get("link", "")} for a in data.get("data", [])]
+                 "url": a.get("link", "")} for a in data.get("data", [])[:limit]]
 
     def save_album(self, album_id: str) -> bool:
         if not self._access_token:
+            return False
+        if not _valid_id(album_id):
             return False
         try:
             r = requests.post(

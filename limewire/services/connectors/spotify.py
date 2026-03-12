@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from urllib.parse import urlencode
@@ -9,13 +10,24 @@ from urllib.parse import urlencode
 import requests
 
 from .base import ConnectorBase, TrackResult, PlaylistResult
-from .oauth import REDIRECT_URI, start_oauth_flow, exchange_code_for_token, refresh_access_token
+from .oauth import (
+    REDIRECT_URI, start_oauth_flow, exchange_code_for_token,
+    refresh_access_token, generate_state, generate_pkce, _sanitize_error,
+)
 from .storage import save_account, load_account
 
 API = "https://api.spotify.com/v1"
 AUTH_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
 SCOPES = "playlist-read-private playlist-modify-public playlist-modify-private user-library-read user-library-modify user-follow-read user-follow-modify"
+
+_SPOTIFY_ID_RE = re.compile(r"^[A-Za-z0-9]{1,64}$")
+MAX_TRACKS = 10000
+
+
+def _valid_id(sid: str) -> bool:
+    """Validate a Spotify ID is alphanumeric (no path traversal)."""
+    return bool(_SPOTIFY_ID_RE.match(sid))
 
 
 class SpotifyConnector(ConnectorBase):
@@ -47,19 +59,25 @@ class SpotifyConnector(ConnectorBase):
         """Launch OAuth in browser, wait for callback. Returns token dict or None."""
         if not self._client_id:
             return {"error": "Set spotify_client_id in Settings first"}
+        state = generate_state()
+        verifier, challenge = generate_pkce()
         params = urlencode({
             "client_id": self._client_id,
             "response_type": "code",
             "redirect_uri": REDIRECT_URI,
             "scope": SCOPES,
             "show_dialog": "true",
+            "state": state,
+            "code_challenge_method": "S256",
+            "code_challenge": challenge,
         })
         url = f"{AUTH_URL}?{params}"
-        result = start_oauth_flow(url, timeout=120)
+        result = start_oauth_flow(url, timeout=120, expected_state=state)
         if not result or "code" not in result:
             return {"error": "OAuth cancelled or timed out"}
         tokens = exchange_code_for_token(
             TOKEN_URL, result["code"], self._client_id, self._client_secret,
+            code_verifier=verifier,
         )
         if "error" in tokens:
             return tokens
@@ -73,8 +91,6 @@ class SpotifyConnector(ConnectorBase):
         save_account("spotify", {
             "access_token": self._access_token,
             "refresh_token": self._refresh_token,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
             "token_expiry": self._token_expiry,
         })
 
@@ -117,7 +133,7 @@ class SpotifyConnector(ConnectorBase):
             r.raise_for_status()
             return r.json()
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
 
     def _api_post(self, path: str, json: dict | list | None = None) -> dict:
         self._ensure_token()
@@ -127,7 +143,7 @@ class SpotifyConnector(ConnectorBase):
             r.raise_for_status()
             return r.json() if r.text.strip() else {}
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
 
     # ── Track parsing ────────────────────────────────────────────────────────
 
@@ -153,12 +169,15 @@ class SpotifyConnector(ConnectorBase):
     # ── Public interface ─────────────────────────────────────────────────────
 
     def search(self, query: str, limit: int = 10) -> list[TrackResult]:
+        limit = min(limit, 50)
         data = self._api_get("/search", {"q": query, "type": "track", "limit": limit})
         if "error" in data:
             return []
         return [self._parse_track(t) for t in data.get("tracks", {}).get("items", [])]
 
     def get_track(self, track_id: str) -> TrackResult | None:
+        if not _valid_id(track_id):
+            return None
         data = self._api_get(f"/tracks/{track_id}")
         if "error" in data:
             return None
@@ -172,12 +191,14 @@ class SpotifyConnector(ConnectorBase):
             _, pid = extract_spotify_id(pid)
             if not pid:
                 return None
+        if not _valid_id(pid):
+            return None
 
         data = self._api_get(f"/playlists/{pid}")
         if "error" in data:
             return None
 
-        # Fetch all tracks with pagination
+        # Fetch all tracks with pagination (bounded)
         tracks: list[TrackResult] = []
         tracks_data = data.get("tracks", {})
         for item in tracks_data.get("items", []):
@@ -185,9 +206,11 @@ class SpotifyConnector(ConnectorBase):
             if t:
                 tracks.append(self._parse_track(t))
 
-        # Paginate
+        # Paginate — validate next_url stays on Spotify API domain
         next_url = tracks_data.get("next")
-        while next_url:
+        while next_url and len(tracks) < MAX_TRACKS:
+            if not next_url.startswith("https://api.spotify.com/"):
+                break  # SSRF protection
             try:
                 r = requests.get(next_url, headers=self._headers(), timeout=20)
                 r.raise_for_status()
@@ -233,14 +256,18 @@ class SpotifyConnector(ConnectorBase):
         if "error" in me:
             return None
         user_id = me.get("id")
+        if not _valid_id(user_id):
+            return None
         data = self._api_post(f"/users/{user_id}/playlists", {
             "name": name, "description": description, "public": False,
         })
         return data.get("id")
 
     def add_tracks(self, playlist_id: str, track_ids: list[str]) -> int:
+        if not _valid_id(playlist_id):
+            return 0
         added = 0
-        uris = [f"spotify:track:{tid}" for tid in track_ids]
+        uris = [f"spotify:track:{tid}" for tid in track_ids if _valid_id(tid)]
         for i in range(0, len(uris), 100):
             batch = uris[i:i + 100]
             result = self._api_post(f"/playlists/{playlist_id}/tracks", {"uris": batch})
@@ -254,6 +281,7 @@ class SpotifyConnector(ConnectorBase):
     # ── Liked songs ──────────────────────────────────────────────────────────
 
     def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        limit = min(limit, 5000)
         tracks: list[TrackResult] = []
         offset = 0
         batch = min(limit, 50)
@@ -275,8 +303,9 @@ class SpotifyConnector(ConnectorBase):
 
     def add_to_liked(self, track_ids: list[str]) -> int:
         added = 0
-        for i in range(0, len(track_ids), 50):
-            batch = track_ids[i:i + 50]
+        valid_ids = [tid for tid in track_ids if _valid_id(tid)]
+        for i in range(0, len(valid_ids), 50):
+            batch = valid_ids[i:i + 50]
             try:
                 r = requests.put(
                     f"{API}/me/tracks", headers=self._headers(),
@@ -290,8 +319,9 @@ class SpotifyConnector(ConnectorBase):
 
     def remove_from_liked(self, track_ids: list[str]) -> int:
         removed = 0
-        for i in range(0, len(track_ids), 50):
-            batch = track_ids[i:i + 50]
+        valid_ids = [tid for tid in track_ids if _valid_id(tid)]
+        for i in range(0, len(valid_ids), 50):
+            batch = valid_ids[i:i + 50]
             try:
                 r = requests.delete(
                     f"{API}/me/tracks", headers=self._headers(),
@@ -306,6 +336,7 @@ class SpotifyConnector(ConnectorBase):
     # ── Followed artists ─────────────────────────────────────────────────────
 
     def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         artists: list[dict] = []
         params: dict = {"type": "artist", "limit": min(limit, 50)}
         while len(artists) < limit:
@@ -328,6 +359,8 @@ class SpotifyConnector(ConnectorBase):
         return artists[:limit]
 
     def follow_artist(self, artist_id: str) -> bool:
+        if not _valid_id(artist_id):
+            return False
         self._ensure_token()
         try:
             r = requests.put(
@@ -342,6 +375,7 @@ class SpotifyConnector(ConnectorBase):
     # ── Saved albums ─────────────────────────────────────────────────────────
 
     def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         albums: list[dict] = []
         offset = 0
         batch = min(limit, 50)
@@ -367,6 +401,8 @@ class SpotifyConnector(ConnectorBase):
         return albums[:limit]
 
     def save_album(self, album_id: str) -> bool:
+        if not _valid_id(album_id):
+            return False
         self._ensure_token()
         try:
             r = requests.put(

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from urllib.parse import urlencode
@@ -9,13 +10,41 @@ from urllib.parse import urlencode
 import requests
 
 from .base import ConnectorBase, TrackResult, PlaylistResult
-from .oauth import REDIRECT_URI, start_oauth_flow, exchange_code_for_token, refresh_access_token
+from .oauth import (
+    REDIRECT_URI, start_oauth_flow, exchange_code_for_token,
+    refresh_access_token, generate_state, generate_pkce, _sanitize_error,
+)
 from .storage import save_account, load_account
 
 YT_API = "https://www.googleapis.com/youtube/v3"
 AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
 SCOPES = "https://www.googleapis.com/auth/youtube"
+
+_YT_VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+_YT_PLAYLIST_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+_YT_CHANNEL_ID_RE = re.compile(r"^UC[A-Za-z0-9_-]{1,128}$")
+_SAFE_YT_URL_RE = re.compile(
+    r"^https?://(www\.)?(youtube\.com|youtu\.be|music\.youtube\.com)/",
+)
+MAX_RESULTS = 5000
+
+
+def _valid_video_id(vid: str) -> bool:
+    return bool(_YT_VIDEO_ID_RE.match(vid))
+
+
+def _valid_playlist_id(pid: str) -> bool:
+    return bool(_YT_PLAYLIST_ID_RE.match(pid))
+
+
+def _valid_channel_id(cid: str) -> bool:
+    return bool(_YT_CHANNEL_ID_RE.match(cid))
+
+
+def _safe_yt_url(url: str) -> bool:
+    """Validate a URL is a YouTube domain before passing to yt-dlp."""
+    return bool(_SAFE_YT_URL_RE.match(url))
 
 
 class YouTubeConnector(ConnectorBase):
@@ -41,11 +70,13 @@ class YouTubeConnector(ConnectorBase):
     def is_authenticated(self) -> bool:
         return bool(self._access_token or self._api_key)
 
-    # ── OAuth ────────────────────────────────────────────────────────────────
+    # ── OAuth (with state + PKCE) ─────────────────────────────────────────────
 
     def start_auth(self) -> dict | None:
         if not self._client_id:
             return {"error": "Set youtube_client_id in Settings first"}
+        state = generate_state()
+        verifier, challenge = generate_pkce()
         params = urlencode({
             "client_id": self._client_id,
             "redirect_uri": REDIRECT_URI,
@@ -53,26 +84,32 @@ class YouTubeConnector(ConnectorBase):
             "scope": SCOPES,
             "access_type": "offline",
             "prompt": "consent",
+            "state": state,
+            "code_challenge_method": "S256",
+            "code_challenge": challenge,
         })
-        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120)
+        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120,
+                                  expected_state=state)
         if not result or "code" not in result:
             return {"error": "OAuth cancelled or timed out"}
         tokens = exchange_code_for_token(
             TOKEN_URL, result["code"], self._client_id, self._client_secret,
+            code_verifier=verifier,
         )
         if "error" in tokens:
             return tokens
         self._access_token = tokens.get("access_token", "")
         self._refresh_token = tokens.get("refresh_token", self._refresh_token)
         self._token_expiry = time.time() + tokens.get("expires_in", 3600)
+        self._persist_tokens()
+        return tokens
+
+    def _persist_tokens(self):
         save_account("youtube", {
             "access_token": self._access_token,
             "refresh_token": self._refresh_token,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
             "token_expiry": self._token_expiry,
         })
-        return tokens
 
     def _ensure_token(self) -> bool:
         with self._lock:
@@ -89,18 +126,15 @@ class YouTubeConnector(ConnectorBase):
                 return False
             self._access_token = tokens.get("access_token", "")
             self._token_expiry = time.time() + tokens.get("expires_in", 3600)
-            save_account("youtube", {
-                "access_token": self._access_token,
-                "refresh_token": self._refresh_token,
-                "client_id": self._client_id,
-                "client_secret": self._client_secret,
-                "token_expiry": self._token_expiry,
-            })
+            if tokens.get("refresh_token"):
+                self._refresh_token = tokens["refresh_token"]
+            self._persist_tokens()
             return True
 
     # ── yt-dlp based search (no auth needed) ─────────────────────────────────
 
     def search(self, query: str, limit: int = 10) -> list[TrackResult]:
+        limit = min(limit, 50)
         try:
             import yt_dlp
             ydl_opts = {
@@ -113,6 +147,8 @@ class YouTubeConnector(ConnectorBase):
             out: list[TrackResult] = []
             for e in entries:
                 vid = e.get("id", "")
+                if not _valid_video_id(vid):
+                    continue
                 out.append(TrackResult(
                     service="youtube",
                     track_id=vid,
@@ -127,13 +163,14 @@ class YouTubeConnector(ConnectorBase):
             return []
 
     def get_track(self, track_id: str) -> TrackResult | None:
+        if not _valid_video_id(track_id):
+            return None
         try:
             import yt_dlp
+            url = f"https://www.youtube.com/watch?v={track_id}"
             ydl_opts = {"quiet": True, "no_warnings": True, "skip_download": True}
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                info = ydl.extract_info(
-                    f"https://www.youtube.com/watch?v={track_id}", download=False,
-                )
+                info = ydl.extract_info(url, download=False)
             return TrackResult(
                 service="youtube",
                 track_id=info.get("id", track_id),
@@ -151,17 +188,23 @@ class YouTubeConnector(ConnectorBase):
             import yt_dlp
             url = playlist_id_or_url
             if not url.startswith("http"):
+                if not _valid_playlist_id(url):
+                    return None
                 url = f"https://www.youtube.com/playlist?list={url}"
+            elif not _safe_yt_url(url):
+                return None  # reject non-YouTube URLs for yt-dlp
             ydl_opts = {
                 "quiet": True, "no_warnings": True,
                 "extract_flat": True, "skip_download": True,
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-            entries = info.get("entries") or []
+            entries = (info.get("entries") or [])[:MAX_RESULTS]
             tracks = []
             for e in entries:
                 vid = e.get("id", "")
+                if not _valid_video_id(vid):
+                    continue
                 tracks.append(TrackResult(
                     service="youtube",
                     track_id=vid,
@@ -209,14 +252,18 @@ class YouTubeConnector(ConnectorBase):
             )
             r.raise_for_status()
             return r.json().get("id")
-        except Exception:
+        except Exception as e:
             return None
 
     def add_tracks(self, playlist_id: str, track_ids: list[str]) -> int:
         if not self._ensure_token():
             return 0
+        if not _valid_playlist_id(playlist_id):
+            return 0
         added = 0
         for vid in track_ids:
+            if not _valid_video_id(vid):
+                continue
             try:
                 r = requests.post(
                     f"{YT_API}/playlistItems",
@@ -242,6 +289,7 @@ class YouTubeConnector(ConnectorBase):
     # ── Liked songs (YouTube "Liked videos" playlist) ─────────────────────────
 
     def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        limit = min(limit, 5000)
         if not self._ensure_token():
             return []
         tracks: list[TrackResult] = []
@@ -257,6 +305,8 @@ class YouTubeConnector(ConnectorBase):
             for item in data.get("items", []):
                 snip = item.get("snippet", {})
                 vid = item.get("id", "")
+                if not _valid_video_id(vid):
+                    continue
                 tracks.append(TrackResult(
                     service="youtube",
                     track_id=vid,
@@ -276,6 +326,8 @@ class YouTubeConnector(ConnectorBase):
             return 0
         added = 0
         for vid in track_ids:
+            if not _valid_video_id(vid):
+                continue
             try:
                 r = requests.post(
                     f"{YT_API}/videos/rate",
@@ -294,6 +346,8 @@ class YouTubeConnector(ConnectorBase):
             return 0
         removed = 0
         for vid in track_ids:
+            if not _valid_video_id(vid):
+                continue
             try:
                 r = requests.post(
                     f"{YT_API}/videos/rate",
@@ -310,6 +364,7 @@ class YouTubeConnector(ConnectorBase):
     # ── Subscriptions (closest to "followed artists") ─────────────────────────
 
     def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         if not self._ensure_token():
             return []
         channels: list[dict] = []
@@ -324,10 +379,11 @@ class YouTubeConnector(ConnectorBase):
                 break
             for item in data.get("items", []):
                 snip = item.get("snippet", {}).get("resourceId", {})
+                cid = snip.get("channelId", "")
                 channels.append({
-                    "id": snip.get("channelId", ""),
+                    "id": cid,
                     "name": item.get("snippet", {}).get("title", ""),
-                    "url": f"https://www.youtube.com/channel/{snip.get('channelId', '')}",
+                    "url": f"https://www.youtube.com/channel/{cid}" if cid else "",
                 })
             npt = data.get("nextPageToken")
             if not npt:

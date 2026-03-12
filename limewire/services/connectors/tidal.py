@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import threading
 import time
 from urllib.parse import urlencode
@@ -9,12 +10,23 @@ from urllib.parse import urlencode
 import requests
 
 from .base import ConnectorBase, TrackResult, PlaylistResult
-from .oauth import REDIRECT_URI, start_oauth_flow, exchange_code_for_token, refresh_access_token
+from .oauth import (
+    REDIRECT_URI, start_oauth_flow, exchange_code_for_token,
+    refresh_access_token, generate_state, generate_pkce, _sanitize_error,
+)
 from .storage import save_account, load_account
 
 API = "https://openapi.tidal.com"
 AUTH_URL = "https://login.tidal.com/authorize"
 TOKEN_URL = "https://auth.tidal.com/v1/oauth2/token"
+
+_TIDAL_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,128}$")
+MAX_TRACKS = 10000
+
+
+def _valid_id(tid: str) -> bool:
+    """Validate a TIDAL ID is safe for URL interpolation."""
+    return bool(_TIDAL_ID_RE.match(tid))
 
 
 class TidalConnector(ConnectorBase):
@@ -39,22 +51,29 @@ class TidalConnector(ConnectorBase):
     def is_authenticated(self) -> bool:
         return bool(self._access_token)
 
-    # ── OAuth ────────────────────────────────────────────────────────────────
+    # ── OAuth (with state + PKCE) ─────────────────────────────────────────────
 
     def start_auth(self) -> dict | None:
         if not self._client_id:
             return {"error": "Set tidal_client_id in Settings first"}
+        state = generate_state()
+        verifier, challenge = generate_pkce()
         params = urlencode({
             "client_id": self._client_id,
             "redirect_uri": REDIRECT_URI,
             "response_type": "code",
             "scope": "playlists.read playlists.write collection.read collection.write",
+            "state": state,
+            "code_challenge_method": "S256",
+            "code_challenge": challenge,
         })
-        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120)
+        result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120,
+                                  expected_state=state)
         if not result or "code" not in result:
             return {"error": "OAuth cancelled or timed out"}
         tokens = exchange_code_for_token(
             TOKEN_URL, result["code"], self._client_id, self._client_secret,
+            code_verifier=verifier,
         )
         if "error" in tokens:
             return tokens
@@ -68,8 +87,6 @@ class TidalConnector(ConnectorBase):
         save_account("tidal", {
             "access_token": self._access_token,
             "refresh_token": self._refresh_token,
-            "client_id": self._client_id,
-            "client_secret": self._client_secret,
             "token_expiry": self._token_expiry,
         })
 
@@ -104,13 +121,14 @@ class TidalConnector(ConnectorBase):
             r = requests.get(f"{API}{path}", headers=self._headers(),
                              params=params, timeout=20)
             if r.status_code == 429:
-                time.sleep(2)
+                retry = int(r.headers.get("Retry-After", "2"))
+                time.sleep(min(retry, 10))
                 r = requests.get(f"{API}{path}", headers=self._headers(),
                                  params=params, timeout=20)
             r.raise_for_status()
             return r.json()
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
 
     def _api_post(self, path: str, json: dict | None = None) -> dict:
         self._ensure_token()
@@ -120,7 +138,7 @@ class TidalConnector(ConnectorBase):
             r.raise_for_status()
             return r.json() if r.text.strip() else {}
         except Exception as e:
-            return {"error": str(e)[:200]}
+            return {"error": _sanitize_error(e)}
 
     # ── Track parsing ────────────────────────────────────────────────────────
 
@@ -154,6 +172,7 @@ class TidalConnector(ConnectorBase):
     # ── Public interface ─────────────────────────────────────────────────────
 
     def search(self, query: str, limit: int = 10) -> list[TrackResult]:
+        limit = min(limit, 50)
         data = self._api_get("/searchresults", {
             "query": query, "limit": limit, "type": "TRACKS",
         })
@@ -166,6 +185,8 @@ class TidalConnector(ConnectorBase):
         return [self._parse_track(item) for item in items]
 
     def get_track(self, track_id: str) -> TrackResult | None:
+        if not _valid_id(track_id):
+            return None
         data = self._api_get(f"/tracks/{track_id}")
         if "error" in data:
             return None
@@ -181,6 +202,8 @@ class TidalConnector(ConnectorBase):
             _, pid = extract_tidal_id(pid)
             if not pid:
                 return None
+        if not _valid_id(pid):
+            return None
 
         data = self._api_get(f"/playlists/{pid}")
         if "error" in data:
@@ -191,9 +214,9 @@ class TidalConnector(ConnectorBase):
             p_resource = p_resource[0] if p_resource else {}
         p_attrs = p_resource.get("attributes") or p_resource
 
-        # Fetch tracks
+        # Fetch tracks (bounded)
         items_data = self._api_get(f"/playlists/{pid}/relationships/items")
-        tracks_list = items_data.get("data") or []
+        tracks_list = (items_data.get("data") or [])[:MAX_TRACKS]
         tracks = [self._parse_track(t) for t in tracks_list]
 
         return PlaylistResult(
@@ -220,11 +243,16 @@ class TidalConnector(ConnectorBase):
         return str(resource.get("id", ""))
 
     def add_tracks(self, playlist_id: str, track_ids: list[str]) -> int:
+        if not _valid_id(playlist_id):
+            return 0
+        valid_ids = [tid for tid in track_ids if _valid_id(tid)]
+        if not valid_ids:
+            return 0
         result = self._api_post(f"/playlists/{playlist_id}/relationships/items", {
-            "data": [{"id": tid, "type": "tracks"} for tid in track_ids],
+            "data": [{"id": tid, "type": "tracks"} for tid in valid_ids],
         })
         if "error" not in result:
-            return len(track_ids)
+            return len(valid_ids)
         return 0
 
     def supports_write(self) -> bool:
@@ -233,6 +261,7 @@ class TidalConnector(ConnectorBase):
     # ── Liked songs (favorites) ───────────────────────────────────────────────
 
     def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        limit = min(limit, 5000)
         tracks: list[TrackResult] = []
         offset = 0
         batch = min(limit, 100)
@@ -254,6 +283,8 @@ class TidalConnector(ConnectorBase):
         self._ensure_token()
         added = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.post(
                     f"{API}/me/favorites/tracks",
@@ -271,6 +302,8 @@ class TidalConnector(ConnectorBase):
         self._ensure_token()
         removed = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.delete(
                     f"{API}/me/favorites/tracks/{tid}",
@@ -285,6 +318,7 @@ class TidalConnector(ConnectorBase):
     # ── Followed artists ──────────────────────────────────────────────────────
 
     def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         artists: list[dict] = []
         offset = 0
         batch = min(limit, 100)
@@ -309,6 +343,8 @@ class TidalConnector(ConnectorBase):
         return artists[:limit]
 
     def follow_artist(self, artist_id: str) -> bool:
+        if not _valid_id(artist_id):
+            return False
         self._ensure_token()
         try:
             r = requests.post(
@@ -325,6 +361,7 @@ class TidalConnector(ConnectorBase):
     # ── Saved albums ──────────────────────────────────────────────────────────
 
     def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         albums: list[dict] = []
         offset = 0
         batch = min(limit, 100)
@@ -350,6 +387,8 @@ class TidalConnector(ConnectorBase):
         return albums[:limit]
 
     def save_album(self, album_id: str) -> bool:
+        if not _valid_id(album_id):
+            return False
         self._ensure_token()
         try:
             r = requests.post(

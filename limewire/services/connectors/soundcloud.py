@@ -2,12 +2,31 @@
 
 from __future__ import annotations
 
+import re
+
 import requests
 
 from .base import ConnectorBase, TrackResult, PlaylistResult
+from .oauth import _sanitize_error
 from .storage import load_account, save_account
 
 SC_API = "https://api.soundcloud.com"
+
+_SC_ID_RE = re.compile(r"^\d{1,20}$")
+_SAFE_SC_URL_RE = re.compile(
+    r"^https?://(www\.|m\.|api\.)?soundcloud\.com/",
+)
+MAX_TRACKS = 10000
+
+
+def _valid_id(sid: str) -> bool:
+    """Validate a SoundCloud numeric ID."""
+    return bool(_SC_ID_RE.match(str(sid)))
+
+
+def _safe_sc_url(url: str) -> bool:
+    """Validate a URL is a SoundCloud domain before passing to yt-dlp."""
+    return bool(_SAFE_SC_URL_RE.match(url))
 
 
 class SoundCloudConnector(ConnectorBase):
@@ -49,6 +68,7 @@ class SoundCloudConnector(ConnectorBase):
     # ── Search (yt-dlp fallback if no API auth) ─────────────────────────────
 
     def search(self, query: str, limit: int = 10) -> list[TrackResult]:
+        limit = min(limit, 50)
         # Try authenticated API first
         if self._access_token:
             try:
@@ -89,31 +109,38 @@ class SoundCloudConnector(ConnectorBase):
             return []
 
     def get_playlist(self, playlist_id_or_url: str) -> PlaylistResult | None:
-        # Try yt-dlp for URL-based playlist fetch
         try:
             import yt_dlp
             url = playlist_id_or_url
             if not url.startswith("http"):
+                if not _valid_id(url):
+                    return None
                 # Try API if authenticated
                 if self._access_token:
-                    r = requests.get(
-                        f"{SC_API}/playlists/{url}",
-                        headers=self._headers(), timeout=20,
-                    )
-                    r.raise_for_status()
-                    data = r.json()
-                    tracks = [self._parse_track(t) for t in data.get("tracks", [])]
-                    return PlaylistResult(
-                        service="soundcloud",
-                        playlist_id=str(data.get("id", url)),
-                        name=data.get("title", ""),
-                        description=data.get("description", ""),
-                        owner=(data.get("user") or {}).get("username", ""),
-                        track_count=len(tracks),
-                        tracks=tracks,
-                        url=data.get("permalink_url", ""),
-                    )
+                    try:
+                        r = requests.get(
+                            f"{SC_API}/playlists/{url}",
+                            headers=self._headers(), timeout=20,
+                        )
+                        r.raise_for_status()
+                        data = r.json()
+                        tracks = [self._parse_track(t) for t in data.get("tracks", [])[:MAX_TRACKS]]
+                        return PlaylistResult(
+                            service="soundcloud",
+                            playlist_id=str(data.get("id", url)),
+                            name=data.get("title", ""),
+                            description=data.get("description", ""),
+                            owner=(data.get("user") or {}).get("username", ""),
+                            track_count=len(tracks),
+                            tracks=tracks,
+                            url=data.get("permalink_url", ""),
+                        )
+                    except Exception:
+                        pass
                 return None
+
+            if not _safe_sc_url(url):
+                return None  # reject non-SoundCloud URLs for yt-dlp
 
             ydl_opts = {
                 "quiet": True, "no_warnings": True,
@@ -121,7 +148,7 @@ class SoundCloudConnector(ConnectorBase):
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(url, download=False)
-            entries = info.get("entries") or []
+            entries = (info.get("entries") or [])[:MAX_TRACKS]
             tracks = []
             for e in entries:
                 tracks.append(TrackResult(
@@ -163,6 +190,11 @@ class SoundCloudConnector(ConnectorBase):
     def add_tracks(self, playlist_id: str, track_ids: list[str]) -> int:
         if not self._access_token:
             return 0
+        if not _valid_id(playlist_id):
+            return 0
+        valid_ids = [tid for tid in track_ids if _valid_id(tid)]
+        if not valid_ids:
+            return 0
         try:
             r = requests.get(
                 f"{SC_API}/playlists/{playlist_id}",
@@ -170,7 +202,7 @@ class SoundCloudConnector(ConnectorBase):
             )
             r.raise_for_status()
             existing = r.json().get("tracks", [])
-            existing.extend({"id": int(tid)} for tid in track_ids)
+            existing.extend({"id": int(tid)} for tid in valid_ids)
             r2 = requests.put(
                 f"{SC_API}/playlists/{playlist_id}",
                 headers=self._headers(),
@@ -178,7 +210,7 @@ class SoundCloudConnector(ConnectorBase):
                 timeout=20,
             )
             r2.raise_for_status()
-            return len(track_ids)
+            return len(valid_ids)
         except Exception:
             return 0
 
@@ -188,6 +220,7 @@ class SoundCloudConnector(ConnectorBase):
     # ── Liked songs ───────────────────────────────────────────────────────────
 
     def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        limit = min(limit, 5000)
         if not self._access_token:
             return []
         tracks: list[TrackResult] = []
@@ -219,6 +252,8 @@ class SoundCloudConnector(ConnectorBase):
             return 0
         added = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.put(
                     f"{SC_API}/me/favorites/{tid}",
@@ -235,6 +270,8 @@ class SoundCloudConnector(ConnectorBase):
             return 0
         removed = 0
         for tid in track_ids:
+            if not _valid_id(tid):
+                continue
             try:
                 r = requests.delete(
                     f"{SC_API}/me/favorites/{tid}",
@@ -249,6 +286,7 @@ class SoundCloudConnector(ConnectorBase):
     # ── Followed artists (users) ──────────────────────────────────────────────
 
     def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        limit = min(limit, 5000)
         if not self._access_token:
             return []
         artists: list[dict] = []
@@ -282,6 +320,8 @@ class SoundCloudConnector(ConnectorBase):
 
     def follow_artist(self, artist_id: str) -> bool:
         if not self._access_token:
+            return False
+        if not _valid_id(artist_id):
             return False
         try:
             r = requests.put(
