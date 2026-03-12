@@ -297,6 +297,7 @@ class SettingsPage(ScrollFrame):
         from limewire.services.connectors import storage
 
         self._acct_status = {}
+        self._acct_security = {}
 
         for svc, label in CONNECTOR_LABELS.items():
             row = tk.Frame(g, bg=T.BG)
@@ -305,6 +306,9 @@ class SettingsPage(ScrollFrame):
             st_lbl = tk.Label(row, text="Not linked", font=T.F_BODY, bg=T.BG, fg=T.TEXT_DIM, width=14)
             st_lbl.pack(side="left", padx=(4, 8))
             self._acct_status[svc] = st_lbl
+            sec_lbl = tk.Label(row, text="", font=T.F_SMALL, bg=T.BG, fg=T.SUCCESS, width=10, anchor="w")
+            sec_lbl.pack(side="left", padx=(0, 8))
+            self._acct_security[svc] = sec_lbl
 
             def _connect(s=svc):
                 self._connect_service(s)
@@ -313,6 +317,20 @@ class SettingsPage(ScrollFrame):
 
             ClassicBtn(row, "Connect", _connect).pack(side="left", padx=(0, 4))
             ClassicBtn(row, "Disconnect", _disconnect).pack(side="left")
+
+        # Security info
+        gs = GroupBox(f, "Security")
+        gs.pack(fill="x", padx=10, pady=(0, 6))
+        for check_text in [
+            "\u2713 PKCE \u2014 OAuth uses Proof Key for Code Exchange",
+            "\u2713 CSRF Protection \u2014 State parameter validates callbacks",
+            "\u2713 Encrypted Storage \u2014 Tokens encrypted at rest (DPAPI)",
+            "\u2713 Input Validation \u2014 All IDs validated before API calls",
+        ]:
+            r = tk.Frame(gs, bg=T.BG)
+            r.pack(fill="x", pady=(0, 2))
+            tk.Label(r, text=check_text[:1], font=T.F_BODY, bg=T.BG, fg=T.SUCCESS).pack(side="left")
+            tk.Label(r, text=check_text[2:], font=T.F_SMALL, bg=T.BG, fg=T.TEXT, anchor="w").pack(side="left", padx=(2, 0))
 
         # API credentials section
         g2 = GroupBox(f, "API Credentials")
@@ -348,11 +366,16 @@ class SettingsPage(ScrollFrame):
             storage.init_db()
             for svc, lbl in self._acct_status.items():
                 acct = storage.load_account(svc)
+                sec_lbl = self._acct_security.get(svc)
                 if acct and acct.get("access_token"):
                     name = acct.get("user_name") or "linked"
                     lbl.config(text=name[:14], fg=T.LIME_DK)
+                    if sec_lbl:
+                        sec_lbl.config(text="\u2713 Secure", fg=T.SUCCESS)
                 else:
                     lbl.config(text="Not linked", fg=T.TEXT_DIM)
+                    if sec_lbl:
+                        sec_lbl.config(text="")
         except Exception:
             pass
 
