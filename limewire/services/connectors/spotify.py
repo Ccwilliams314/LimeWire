@@ -15,7 +15,7 @@ from .storage import save_account, load_account
 API = "https://api.spotify.com/v1"
 AUTH_URL = "https://accounts.spotify.com/authorize"
 TOKEN_URL = "https://accounts.spotify.com/api/token"
-SCOPES = "playlist-read-private playlist-modify-public playlist-modify-private"
+SCOPES = "playlist-read-private playlist-modify-public playlist-modify-private user-library-read user-library-modify user-follow-read user-follow-modify"
 
 
 class SpotifyConnector(ConnectorBase):
@@ -250,3 +250,130 @@ class SpotifyConnector(ConnectorBase):
 
     def supports_write(self) -> bool:
         return self.is_authenticated()
+
+    # ── Liked songs ──────────────────────────────────────────────────────────
+
+    def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        tracks: list[TrackResult] = []
+        offset = 0
+        batch = min(limit, 50)
+        while len(tracks) < limit:
+            data = self._api_get("/me/tracks", {"limit": batch, "offset": offset})
+            if "error" in data:
+                break
+            items = data.get("items", [])
+            if not items:
+                break
+            for item in items:
+                t = item.get("track")
+                if t:
+                    tracks.append(self._parse_track(t))
+            offset += len(items)
+            if not data.get("next"):
+                break
+        return tracks[:limit]
+
+    def add_to_liked(self, track_ids: list[str]) -> int:
+        added = 0
+        for i in range(0, len(track_ids), 50):
+            batch = track_ids[i:i + 50]
+            try:
+                r = requests.put(
+                    f"{API}/me/tracks", headers=self._headers(),
+                    json={"ids": batch}, timeout=20,
+                )
+                r.raise_for_status()
+                added += len(batch)
+            except Exception:
+                continue
+        return added
+
+    def remove_from_liked(self, track_ids: list[str]) -> int:
+        removed = 0
+        for i in range(0, len(track_ids), 50):
+            batch = track_ids[i:i + 50]
+            try:
+                r = requests.delete(
+                    f"{API}/me/tracks", headers=self._headers(),
+                    json={"ids": batch}, timeout=20,
+                )
+                r.raise_for_status()
+                removed += len(batch)
+            except Exception:
+                continue
+        return removed
+
+    # ── Followed artists ─────────────────────────────────────────────────────
+
+    def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        artists: list[dict] = []
+        params: dict = {"type": "artist", "limit": min(limit, 50)}
+        while len(artists) < limit:
+            data = self._api_get("/me/following", params)
+            if "error" in data:
+                break
+            items = (data.get("artists") or {}).get("items", [])
+            if not items:
+                break
+            for a in items:
+                artists.append({
+                    "id": a.get("id", ""),
+                    "name": a.get("name", ""),
+                    "url": (a.get("external_urls") or {}).get("spotify", ""),
+                })
+            cursor_after = (data.get("artists") or {}).get("cursors", {}).get("after")
+            if not cursor_after:
+                break
+            params["after"] = cursor_after
+        return artists[:limit]
+
+    def follow_artist(self, artist_id: str) -> bool:
+        self._ensure_token()
+        try:
+            r = requests.put(
+                f"{API}/me/following", headers=self._headers(),
+                params={"type": "artist", "ids": artist_id}, timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False
+
+    # ── Saved albums ─────────────────────────────────────────────────────────
+
+    def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        albums: list[dict] = []
+        offset = 0
+        batch = min(limit, 50)
+        while len(albums) < limit:
+            data = self._api_get("/me/albums", {"limit": batch, "offset": offset})
+            if "error" in data:
+                break
+            items = data.get("items", [])
+            if not items:
+                break
+            for item in items:
+                a = item.get("album", {})
+                artists = [x.get("name", "") for x in a.get("artists", [])]
+                albums.append({
+                    "id": a.get("id", ""),
+                    "title": a.get("name", ""),
+                    "artist": ", ".join(artists),
+                    "url": (a.get("external_urls") or {}).get("spotify", ""),
+                })
+            offset += len(items)
+            if not data.get("next"):
+                break
+        return albums[:limit]
+
+    def save_album(self, album_id: str) -> bool:
+        self._ensure_token()
+        try:
+            r = requests.put(
+                f"{API}/me/albums", headers=self._headers(),
+                json={"ids": [album_id]}, timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False

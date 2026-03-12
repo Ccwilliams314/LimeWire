@@ -237,33 +237,49 @@ class PlaylistPage(ScrollFrame):
 
     # ── Transfer dialog ───────────────────────────────────────────────
     def _open_transfer(self):
-        """Open a dialog to transfer playlists between services."""
+        """Open a dialog to transfer playlists, liked songs, artists, and albums between services."""
         dlg = tk.Toplevel(self.app)
-        dlg.title("Transfer Playlist")
-        dlg.geometry("420x320")
+        dlg.title("Transfer Between Services")
+        dlg.geometry("520x540")
         dlg.configure(bg=T.BG)
         dlg.transient(self.app)
         dlg.grab_set()
 
-        tk.Label(dlg, text="Transfer Playlist Between Services", font=T.F_BOLD,
+        tk.Label(dlg, text="Transfer Between Services", font=T.F_BOLD,
                  bg=T.BG, fg=T.TEXT).pack(pady=(12, 8))
+
+        from tkinter import ttk
+
+        # Transfer type
+        tf0 = tk.Frame(dlg, bg=T.BG)
+        tf0.pack(fill="x", padx=16, pady=4)
+        tk.Label(tf0, text="Type:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        type_var = tk.StringVar(value="playlist")
+        type_cb = ttk.Combobox(tf0, textvariable=type_var,
+                               values=["playlist", "all_playlists", "liked_songs", "followed_artists", "saved_albums"],
+                               state="readonly", width=18, font=T.F_BODY)
+        type_cb.pack(side="left", padx=(4, 0))
 
         # Source
         sf = tk.Frame(dlg, bg=T.BG)
         sf.pack(fill="x", padx=16, pady=4)
         tk.Label(sf, text="Source:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
         src_var = tk.StringVar(value="spotify")
-        from tkinter import ttk
         src_cb = ttk.Combobox(sf, textvariable=src_var, values=list(CONNECTOR_LABELS.keys()),
                               state="readonly", width=16, font=T.F_BODY)
         src_cb.pack(side="left", padx=(4, 0))
 
         # Source URL
-        uf = tk.Frame(dlg, bg=T.BG)
-        uf.pack(fill="x", padx=16, pady=4)
-        tk.Label(uf, text="Playlist URL:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        url_frame = tk.Frame(dlg, bg=T.BG)
+        url_frame.pack(fill="x", padx=16, pady=4)
+        tk.Label(url_frame, text="Playlist URL:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
         url_var = tk.StringVar(value=self.pl_var.get())
-        ClassicEntry(uf, url_var, width=30).pack(side="left", fill="x", expand=True, ipady=2)
+        ClassicEntry(url_frame, url_var, width=30).pack(side="left", fill="x", expand=True, ipady=2)
+
+        def on_type_change(*_):
+            show = type_var.get() == "playlist"
+            url_frame.pack(fill="x", padx=16, pady=4) if show else url_frame.pack_forget()
+        type_var.trace_add("write", on_type_change)
 
         # Target
         tf = tk.Frame(dlg, bg=T.BG)
@@ -280,43 +296,138 @@ class PlaylistPage(ScrollFrame):
         status = tk.Label(dlg, text="Ready", font=T.F_BODY, bg=T.BG, fg=T.TEXT_DIM)
         status.pack(padx=16, anchor="w")
 
-        # Result
-        result_lbl = tk.Label(dlg, text="", font=T.F_BODY, bg=T.BG, fg=T.TEXT, wraplength=380)
-        result_lbl.pack(padx=16, pady=(4, 0), anchor="w")
+        # Detailed report area (scrollable)
+        report_frame = tk.Frame(dlg, bg=T.BG)
+        report_frame.pack(fill="both", expand=True, padx=16, pady=(4, 0))
+        report_text = tk.Text(report_frame, height=10, bg=T.ENTRY_BG, fg=T.TEXT,
+                              font=T.F_SMALL, wrap="word", state="disabled",
+                              relief="flat", borderwidth=1)
+        report_sb = tk.Scrollbar(report_frame, command=report_text.yview)
+        report_text.config(yscrollcommand=report_sb.set)
+        report_sb.pack(side="right", fill="y")
+        report_text.pack(side="left", fill="both", expand=True)
+
+        _last_report = {}
+
+        def show_report(report_data):
+            report_text.config(state="normal")
+            report_text.delete("1.0", "end")
+            if isinstance(report_data, dict):
+                for k, v in report_data.items():
+                    report_text.insert("end", f"{k}: {v}\n")
+            elif hasattr(report_data, "matches"):
+                report_text.insert("end", f"Total: {report_data.total}  Matched: {report_data.matched}  "
+                                   f"Added: {report_data.added}  Failed: {report_data.failed}\n\n")
+                for m in report_data.matches:
+                    icon = "\u2713" if m.matched else "\u2717"
+                    src_title = f"{m.source.artist} - {m.source.title}" if m.source else "?"
+                    tgt_title = f" -> {m.target.artist} - {m.target.title}" if m.target else ""
+                    conf = f" ({m.confidence:.0%} {m.match_method})" if m.matched else ""
+                    report_text.insert("end", f"{icon} {src_title}{tgt_title}{conf}\n")
+            report_text.config(state="disabled")
 
         def do_transfer():
             src = src_var.get()
             tgt = tgt_var.get()
-            pl_url = url_var.get().strip()
-            if not pl_url:
-                status.config(text="Enter a playlist URL", fg=T.RED)
-                return
+            xfer_type = type_var.get()
+
             if src == tgt:
                 status.config(text="Source and target must differ", fg=T.RED)
                 return
-            status.config(text=f"Transferring {CONNECTOR_LABELS.get(src)} → {CONNECTOR_LABELS.get(tgt)}...", fg=T.YELLOW)
+
+            if xfer_type == "playlist":
+                pl_url = url_var.get().strip()
+                if not pl_url:
+                    status.config(text="Enter a playlist URL", fg=T.RED)
+                    return
+
+            src_label = CONNECTOR_LABELS.get(src, src)
+            tgt_label = CONNECTOR_LABELS.get(tgt, tgt)
+            status.config(text=f"Transferring {src_label} -> {tgt_label}...", fg=T.YELLOW)
             prog["value"] = 10
 
             def run():
                 try:
-                    from limewire.services.metadata import connector_transfer_playlist
-                    report = connector_transfer_playlist(src, tgt, pl_url, self.app.settings)
-                    if "error" in report:
-                        self.after(0, lambda: status.config(text=report["error"][:60], fg=T.RED))
+                    from limewire.services.connectors import build_connector
+                    from limewire.services.connectors.transfer import (
+                        transfer_playlist as do_xfer, batch_transfer_playlists,
+                        transfer_liked_songs, transfer_followed_artists, transfer_saved_albums,
+                    )
+                    s = self.app.settings
+                    src_conn = build_connector(src, s)
+                    tgt_conn = build_connector(tgt, s)
+                    if not src_conn or not tgt_conn:
+                        self.after(0, lambda: status.config(text="Could not build connectors", fg=T.RED))
                         return
-                    self.after(0, lambda: prog.configure(value=100))
-                    msg = (f"Matched: {report.get('matched', 0)}/{report.get('total', 0)}, "
-                           f"Added: {report.get('added', 0)}, Failed: {report.get('failed', 0)}")
-                    col = T.LIME_DK if report.get("failed", 0) == 0 else T.YELLOW
-                    self.after(0, lambda: (
-                        status.config(text="Transfer complete!", fg=col),
-                        result_lbl.config(text=msg, fg=T.TEXT)))
+
+                    if xfer_type == "playlist":
+                        rpt = do_xfer(src_conn, tgt_conn, url_var.get().strip())
+                        self.after(0, lambda: prog.configure(value=100))
+                        msg = f"Matched: {rpt.matched}/{rpt.total}, Added: {rpt.added}, Failed: {rpt.failed}"
+                        col = T.LIME_DK if rpt.failed == 0 else T.YELLOW
+                        self.after(0, lambda: (status.config(text="Transfer complete!", fg=col), show_report(rpt)))
+
+                    elif xfer_type == "all_playlists":
+                        reports = batch_transfer_playlists(src_conn, tgt_conn)
+                        self.after(0, lambda: prog.configure(value=100))
+                        total_added = sum(r.added for r in reports)
+                        total_matched = sum(r.matched for r in reports)
+                        msg = f"{len(reports)} playlists, {total_matched} matched, {total_added} added"
+                        self.after(0, lambda: status.config(text=msg, fg=T.LIME_DK))
+
+                    elif xfer_type == "liked_songs":
+                        rpt = transfer_liked_songs(src_conn, tgt_conn)
+                        self.after(0, lambda: prog.configure(value=100))
+                        msg = f"Matched: {rpt.matched}/{rpt.total}, Added: {rpt.added}"
+                        self.after(0, lambda: (status.config(text=msg, fg=T.LIME_DK), show_report(rpt)))
+
+                    elif xfer_type == "followed_artists":
+                        result = transfer_followed_artists(src_conn, tgt_conn)
+                        self.after(0, lambda: prog.configure(value=100))
+                        self.after(0, lambda: (status.config(
+                            text=f"Followed: {result['followed']}/{result['total']}", fg=T.LIME_DK),
+                            show_report(result)))
+
+                    elif xfer_type == "saved_albums":
+                        result = transfer_saved_albums(src_conn, tgt_conn)
+                        self.after(0, lambda: prog.configure(value=100))
+                        self.after(0, lambda: (status.config(
+                            text=f"Saved: {result['saved']}/{result['total']}", fg=T.LIME_DK),
+                            show_report(result)))
+
                 except Exception as e:
                     self.after(0, lambda: status.config(text=f"Error: {str(e)[:60]}", fg=T.RED))
 
             threading.Thread(target=run, daemon=True).start()
 
+        def export_csv():
+            from tkinter import filedialog as fd
+            path = fd.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV", "*.csv")])
+            if not path:
+                return
+            try:
+                from limewire.services.connectors.csv_io import export_tracks_csv
+                tracks = [t for t, v in zip(self._tracks, self._cvars)]
+                from limewire.services.connectors.base import TrackResult
+                export_list = []
+                for t in tracks:
+                    export_list.append(TrackResult(
+                        service=t.get("service", ""),
+                        track_id=t.get("track_id", ""),
+                        title=t.get("title", ""),
+                        artist=t.get("artist", ""),
+                        album=t.get("album", ""),
+                        duration_ms=t.get("duration_ms", 0),
+                        isrc=t.get("isrc", ""),
+                        url=t.get("url", ""),
+                    ))
+                export_tracks_csv(export_list, path)
+                status.config(text=f"Exported {len(export_list)} tracks to CSV", fg=T.LIME_DK)
+            except Exception as e:
+                status.config(text=f"Export error: {str(e)[:40]}", fg=T.RED)
+
         bf = tk.Frame(dlg, bg=T.BG)
-        bf.pack(fill="x", padx=16, pady=(12, 8))
+        bf.pack(fill="x", padx=16, pady=(8, 8))
         LimeBtn(bf, "Transfer", do_transfer, width=14).pack(side="left", padx=(0, 6))
+        OrangeBtn(bf, "Export CSV", export_csv).pack(side="left", padx=(0, 6))
         ClassicBtn(bf, "Close", dlg.destroy).pack(side="left")

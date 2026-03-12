@@ -116,3 +116,35 @@ class ConnectorBase(ABC):
     def supports_write(self) -> bool:
         """Return True if this connector supports playlist creation/modification."""
         return False
+
+    # ── Liked songs / favorites ──────────────────────────────────────────
+
+    def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        """Get user's liked/saved tracks."""
+        return []
+
+    def add_to_liked(self, track_ids: list[str]) -> int:
+        """Add tracks to user's liked/saved songs. Returns count added."""
+        return 0
+
+    def remove_from_liked(self, track_ids: list[str]) -> int:
+        """Remove tracks from user's liked/saved songs. Returns count removed."""
+        return 0
+
+    # ── Artists / Albums ─────────────────────────────────────────────────
+
+    def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        """Get user's followed artists. Returns list of {id, name, url}."""
+        return []
+
+    def follow_artist(self, artist_id: str) -> bool:
+        """Follow an artist. Returns True on success."""
+        return False
+
+    def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        """Get user's saved albums. Returns list of {id, title, artist, url}."""
+        return []
+
+    def save_album(self, album_id: str) -> bool:
+        """Save an album to library. Returns True on success."""
+        return False

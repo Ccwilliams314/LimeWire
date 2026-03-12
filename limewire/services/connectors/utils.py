@@ -13,6 +13,7 @@ SOURCE_PREFIXES: dict[str, str] = {
     "sc": "soundcloud",
     "td": "tidal",
     "az": "amazon_music",
+    "dz": "deezer",
 }
 
 # ── URL-to-service patterns ──────────────────────────────────────────────────
@@ -23,6 +24,7 @@ _URL_PATTERNS: list[tuple[str, str]] = [
     (r"soundcloud\.com", "soundcloud"),
     (r"tidal\.com|listen\.tidal", "tidal"),
     (r"music\.amazon\.", "amazon_music"),
+    (r"deezer\.com", "deezer"),
 ]
 
 CONNECTOR_LABELS: dict[str, str] = {
@@ -32,6 +34,7 @@ CONNECTOR_LABELS: dict[str, str] = {
     "amazon_music": "Amazon Music",
     "tidal": "TIDAL",
     "soundcloud": "SoundCloud",
+    "deezer": "Deezer",
 }
 
 

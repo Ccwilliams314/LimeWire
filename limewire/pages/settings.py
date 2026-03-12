@@ -327,6 +327,8 @@ class SettingsPage(ScrollFrame):
             ("soundcloud_client_id", "SoundCloud Client ID"),
             ("tidal_client_id", "TIDAL Client ID"),
             ("tidal_client_secret", "TIDAL Client Secret"),
+            ("deezer_app_id", "Deezer App ID"),
+            ("deezer_app_secret", "Deezer App Secret"),
         ]
         self._cred_vars = {}
         for key, label in cred_fields:

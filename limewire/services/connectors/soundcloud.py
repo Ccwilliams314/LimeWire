@@ -184,3 +184,111 @@ class SoundCloudConnector(ConnectorBase):
 
     def supports_write(self) -> bool:
         return self.is_authenticated()
+
+    # ── Liked songs ───────────────────────────────────────────────────────────
+
+    def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        if not self._access_token:
+            return []
+        tracks: list[TrackResult] = []
+        offset = 0
+        batch = min(limit, 50)
+        while len(tracks) < limit:
+            try:
+                r = requests.get(
+                    f"{SC_API}/me/favorites",
+                    headers=self._headers(),
+                    params={"limit": batch, "offset": offset},
+                    timeout=20,
+                )
+                r.raise_for_status()
+                items = r.json()
+            except Exception:
+                break
+            if not items:
+                break
+            for item in items:
+                tracks.append(self._parse_track(item))
+            offset += len(items)
+            if len(items) < batch:
+                break
+        return tracks[:limit]
+
+    def add_to_liked(self, track_ids: list[str]) -> int:
+        if not self._access_token:
+            return 0
+        added = 0
+        for tid in track_ids:
+            try:
+                r = requests.put(
+                    f"{SC_API}/me/favorites/{tid}",
+                    headers=self._headers(), timeout=20,
+                )
+                r.raise_for_status()
+                added += 1
+            except Exception:
+                continue
+        return added
+
+    def remove_from_liked(self, track_ids: list[str]) -> int:
+        if not self._access_token:
+            return 0
+        removed = 0
+        for tid in track_ids:
+            try:
+                r = requests.delete(
+                    f"{SC_API}/me/favorites/{tid}",
+                    headers=self._headers(), timeout=20,
+                )
+                r.raise_for_status()
+                removed += 1
+            except Exception:
+                continue
+        return removed
+
+    # ── Followed artists (users) ──────────────────────────────────────────────
+
+    def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        if not self._access_token:
+            return []
+        artists: list[dict] = []
+        offset = 0
+        batch = min(limit, 50)
+        while len(artists) < limit:
+            try:
+                r = requests.get(
+                    f"{SC_API}/me/followings",
+                    headers=self._headers(),
+                    params={"limit": batch, "offset": offset},
+                    timeout=20,
+                )
+                r.raise_for_status()
+                data = r.json()
+            except Exception:
+                break
+            items = data.get("collection") or data if isinstance(data, list) else data.get("collection", [])
+            if not items:
+                break
+            for u in items:
+                artists.append({
+                    "id": str(u.get("id", "")),
+                    "name": u.get("username", ""),
+                    "url": u.get("permalink_url", ""),
+                })
+            offset += len(items)
+            if len(items) < batch:
+                break
+        return artists[:limit]
+
+    def follow_artist(self, artist_id: str) -> bool:
+        if not self._access_token:
+            return False
+        try:
+            r = requests.put(
+                f"{SC_API}/me/followings/{artist_id}",
+                headers=self._headers(), timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False

@@ -70,7 +70,7 @@ class SearchPage(ScrollFrame):
                                      cursor="hand2", command=self._cancel)
         ClassicBtn(sf, "Preview", self._preview).pack(side="left")
         HSep(p)
-        self.clip_lbl = tk.Label(p, text="  Tip: Paste URL, or type sc: / yt: / sp: / am: / td: to search services",
+        self.clip_lbl = tk.Label(p, text="  Tip: Paste URL, or type sc: / yt: / sp: / am: / td: / dz: to search services",
                                   font=T.F_SMALL, bg=T.CARD_BG, fg=T.TEXT_DIM,
                                   anchor="w", relief="flat", bd=0, padx=8, pady=4,
                                   highlightthickness=1, highlightbackground=T.CARD_BORDER)
@@ -202,6 +202,9 @@ class SearchPage(ScrollFrame):
         elif url.startswith("az:"):
             self.url_indicator.config(fg=T.LIME_DK)
             self.clip_lbl.config(text=f"  Amazon Music search: {url[3:].strip()}", fg=T.ORANGE)
+        elif url.startswith("dz:"):
+            self.url_indicator.config(fg=T.LIME_DK)
+            self.clip_lbl.config(text=f"  Deezer search: {url[3:].strip()}", fg=T.ORANGE)
         elif is_url(url):
             self.url_indicator.config(fg=T.LIME_DK)
             src = detect_source(url)
@@ -269,7 +272,7 @@ class SearchPage(ScrollFrame):
             return
         # Support search queries: "sc:query" for SoundCloud, "bc:query" for Bandcamp, "yt:query" for YouTube
         # Also "sp:", "am:", "td:", "az:" for connector-based search → YouTube download
-        if url.startswith(("sp:", "am:", "td:", "az:")):
+        if url.startswith(("sp:", "am:", "td:", "az:", "dz:")):
             self._connector_search_dl(url[:2], url[3:].strip())
             return
         if url.startswith("sc:"):

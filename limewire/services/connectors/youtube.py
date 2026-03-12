@@ -238,3 +238,115 @@ class YouTubeConnector(ConnectorBase):
 
     def supports_write(self) -> bool:
         return bool(self._access_token)
+
+    # ── Liked songs (YouTube "Liked videos" playlist) ─────────────────────────
+
+    def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        if not self._ensure_token():
+            return []
+        tracks: list[TrackResult] = []
+        params: dict = {"part": "snippet", "myRating": "like", "maxResults": min(limit, 50)}
+        while len(tracks) < limit:
+            try:
+                r = requests.get(f"{YT_API}/videos", headers=self._api_headers(),
+                                 params=params, timeout=20)
+                r.raise_for_status()
+                data = r.json()
+            except Exception:
+                break
+            for item in data.get("items", []):
+                snip = item.get("snippet", {})
+                vid = item.get("id", "")
+                tracks.append(TrackResult(
+                    service="youtube",
+                    track_id=vid,
+                    title=snip.get("title", ""),
+                    artist=snip.get("channelTitle", ""),
+                    url=f"https://www.youtube.com/watch?v={vid}",
+                    artwork_url=(snip.get("thumbnails") or {}).get("high", {}).get("url", ""),
+                ))
+            npt = data.get("nextPageToken")
+            if not npt:
+                break
+            params["pageToken"] = npt
+        return tracks[:limit]
+
+    def add_to_liked(self, track_ids: list[str]) -> int:
+        if not self._ensure_token():
+            return 0
+        added = 0
+        for vid in track_ids:
+            try:
+                r = requests.post(
+                    f"{YT_API}/videos/rate",
+                    headers=self._api_headers(),
+                    params={"id": vid, "rating": "like"},
+                    timeout=20,
+                )
+                r.raise_for_status()
+                added += 1
+            except Exception:
+                continue
+        return added
+
+    def remove_from_liked(self, track_ids: list[str]) -> int:
+        if not self._ensure_token():
+            return 0
+        removed = 0
+        for vid in track_ids:
+            try:
+                r = requests.post(
+                    f"{YT_API}/videos/rate",
+                    headers=self._api_headers(),
+                    params={"id": vid, "rating": "none"},
+                    timeout=20,
+                )
+                r.raise_for_status()
+                removed += 1
+            except Exception:
+                continue
+        return removed
+
+    # ── Subscriptions (closest to "followed artists") ─────────────────────────
+
+    def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        if not self._ensure_token():
+            return []
+        channels: list[dict] = []
+        params: dict = {"part": "snippet", "mine": "true", "maxResults": min(limit, 50)}
+        while len(channels) < limit:
+            try:
+                r = requests.get(f"{YT_API}/subscriptions", headers=self._api_headers(),
+                                 params=params, timeout=20)
+                r.raise_for_status()
+                data = r.json()
+            except Exception:
+                break
+            for item in data.get("items", []):
+                snip = item.get("snippet", {}).get("resourceId", {})
+                channels.append({
+                    "id": snip.get("channelId", ""),
+                    "name": item.get("snippet", {}).get("title", ""),
+                    "url": f"https://www.youtube.com/channel/{snip.get('channelId', '')}",
+                })
+            npt = data.get("nextPageToken")
+            if not npt:
+                break
+            params["pageToken"] = npt
+        return channels[:limit]
+
+    def follow_artist(self, artist_id: str) -> bool:
+        if not self._ensure_token():
+            return False
+        try:
+            r = requests.post(
+                f"{YT_API}/subscriptions",
+                headers=self._api_headers(),
+                params={"part": "snippet"},
+                json={"snippet": {"resourceId": {"kind": "youtube#channel", "channelId": artist_id}}},
+                timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False

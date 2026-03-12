@@ -9,6 +9,7 @@ from .apple_music import AppleMusicConnector
 from .soundcloud import SoundCloudConnector
 from .tidal import TidalConnector
 from .amazon_music import AmazonMusicConnector
+from .deezer import DeezerConnector
 
 _REGISTRY: dict[str, type[ConnectorBase]] = {
     "spotify": SpotifyConnector,
@@ -17,6 +18,7 @@ _REGISTRY: dict[str, type[ConnectorBase]] = {
     "soundcloud": SoundCloudConnector,
     "tidal": TidalConnector,
     "amazon_music": AmazonMusicConnector,
+    "deezer": DeezerConnector,
 }
 
 

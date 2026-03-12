@@ -48,7 +48,7 @@ class TidalConnector(ConnectorBase):
             "client_id": self._client_id,
             "redirect_uri": REDIRECT_URI,
             "response_type": "code",
-            "scope": "playlists.read playlists.write",
+            "scope": "playlists.read playlists.write collection.read collection.write",
         })
         result = start_oauth_flow(f"{AUTH_URL}?{params}", timeout=120)
         if not result or "code" not in result:
@@ -229,3 +229,136 @@ class TidalConnector(ConnectorBase):
 
     def supports_write(self) -> bool:
         return self.is_authenticated()
+
+    # ── Liked songs (favorites) ───────────────────────────────────────────────
+
+    def get_liked_songs(self, limit: int = 500) -> list[TrackResult]:
+        tracks: list[TrackResult] = []
+        offset = 0
+        batch = min(limit, 100)
+        while len(tracks) < limit:
+            data = self._api_get("/me/favorites/tracks", {"limit": batch, "offset": offset})
+            if "error" in data:
+                break
+            items = data.get("data") or []
+            if not items:
+                break
+            for item in items:
+                tracks.append(self._parse_track(item))
+            offset += len(items)
+            if len(items) < batch:
+                break
+        return tracks[:limit]
+
+    def add_to_liked(self, track_ids: list[str]) -> int:
+        self._ensure_token()
+        added = 0
+        for tid in track_ids:
+            try:
+                r = requests.post(
+                    f"{API}/me/favorites/tracks",
+                    headers=self._headers(),
+                    json={"data": [{"id": tid, "type": "tracks"}]},
+                    timeout=20,
+                )
+                r.raise_for_status()
+                added += 1
+            except Exception:
+                continue
+        return added
+
+    def remove_from_liked(self, track_ids: list[str]) -> int:
+        self._ensure_token()
+        removed = 0
+        for tid in track_ids:
+            try:
+                r = requests.delete(
+                    f"{API}/me/favorites/tracks/{tid}",
+                    headers=self._headers(), timeout=20,
+                )
+                r.raise_for_status()
+                removed += 1
+            except Exception:
+                continue
+        return removed
+
+    # ── Followed artists ──────────────────────────────────────────────────────
+
+    def get_followed_artists(self, limit: int = 500) -> list[dict]:
+        artists: list[dict] = []
+        offset = 0
+        batch = min(limit, 100)
+        while len(artists) < limit:
+            data = self._api_get("/me/favorites/artists", {"limit": batch, "offset": offset})
+            if "error" in data:
+                break
+            items = data.get("data") or []
+            if not items:
+                break
+            for item in items:
+                resource = item.get("resource") or item
+                attrs = resource.get("attributes") or resource
+                artists.append({
+                    "id": str(resource.get("id", "")),
+                    "name": attrs.get("name", ""),
+                    "url": attrs.get("externalLink", ""),
+                })
+            offset += len(items)
+            if len(items) < batch:
+                break
+        return artists[:limit]
+
+    def follow_artist(self, artist_id: str) -> bool:
+        self._ensure_token()
+        try:
+            r = requests.post(
+                f"{API}/me/favorites/artists",
+                headers=self._headers(),
+                json={"data": [{"id": artist_id, "type": "artists"}]},
+                timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False
+
+    # ── Saved albums ──────────────────────────────────────────────────────────
+
+    def get_saved_albums(self, limit: int = 500) -> list[dict]:
+        albums: list[dict] = []
+        offset = 0
+        batch = min(limit, 100)
+        while len(albums) < limit:
+            data = self._api_get("/me/favorites/albums", {"limit": batch, "offset": offset})
+            if "error" in data:
+                break
+            items = data.get("data") or []
+            if not items:
+                break
+            for item in items:
+                resource = item.get("resource") or item
+                attrs = resource.get("attributes") or resource
+                albums.append({
+                    "id": str(resource.get("id", "")),
+                    "title": attrs.get("title", ""),
+                    "artist": attrs.get("artistName", ""),
+                    "url": attrs.get("externalLink", ""),
+                })
+            offset += len(items)
+            if len(items) < batch:
+                break
+        return albums[:limit]
+
+    def save_album(self, album_id: str) -> bool:
+        self._ensure_token()
+        try:
+            r = requests.post(
+                f"{API}/me/favorites/albums",
+                headers=self._headers(),
+                json={"data": [{"id": album_id, "type": "albums"}]},
+                timeout=20,
+            )
+            r.raise_for_status()
+            return True
+        except Exception:
+            return False

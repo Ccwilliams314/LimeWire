@@ -46,6 +46,8 @@ SETTINGS_SCHEMA = {
     "soundcloud_client_id":  ("", "str"),
     "tidal_client_id":       ("", "str"),
     "tidal_client_secret":   ("", "str"),
+    "deezer_app_id":         ("", "str"),
+    "deezer_app_secret":     ("", "str"),
 }
 
 # ── Per-page settings schemas ────────────────────────────────────────────────

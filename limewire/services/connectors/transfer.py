@@ -1,9 +1,9 @@
-"""Playlist transfer and sync orchestration."""
+"""Playlist transfer, sync, batch operations, and smart links."""
 
 from __future__ import annotations
 
-from .base import ConnectorBase, TransferReport
-from .matching import match_tracks_bulk
+from .base import ConnectorBase, TrackResult, TransferReport
+from .matching import match_track, match_tracks_bulk
 from .storage import save_transfer
 
 
@@ -157,3 +157,159 @@ def sync_playlist(
     )
 
     return report
+
+
+# ── Batch transfer ────────────────────────────────────────────────────────────
+
+def batch_transfer_playlists(
+    source: ConnectorBase,
+    target: ConnectorBase,
+    playlist_ids: list[str] | None = None,
+    progress_callback=None,
+) -> list[TransferReport]:
+    """Transfer multiple playlists (or all user playlists) from source to target.
+
+    If playlist_ids is None, transfers all user playlists from source.
+    progress_callback(playlist_index: int, total_playlists: int, report: TransferReport | None)
+    """
+    if playlist_ids is None:
+        playlists = source.list_user_playlists()
+        playlist_ids = [p.playlist_id for p in playlists]
+
+    reports: list[TransferReport] = []
+    total = len(playlist_ids)
+    for i, pid in enumerate(playlist_ids):
+        if progress_callback:
+            progress_callback(i, total, None)
+
+        def inner_progress(current, tot, stage):
+            if progress_callback:
+                progress_callback(i, total, None)
+
+        rpt = transfer_playlist(source, target, pid, progress_callback=inner_progress)
+        reports.append(rpt)
+
+        if progress_callback:
+            progress_callback(i + 1, total, rpt)
+
+    return reports
+
+
+def transfer_liked_songs(
+    source: ConnectorBase,
+    target: ConnectorBase,
+    limit: int = 500,
+    progress_callback=None,
+) -> TransferReport:
+    """Transfer liked/saved songs from source to target service."""
+    report = TransferReport(
+        source_service=source.service_name,
+        target_service=target.service_name,
+        source_playlist="liked_songs",
+    )
+
+    if progress_callback:
+        progress_callback(0, 1, "Fetching liked songs...")
+    liked = source.get_liked_songs(limit=limit)
+    report.total = len(liked)
+
+    if not liked:
+        return report
+
+    def match_progress(current, total):
+        if progress_callback:
+            progress_callback(current, total, f"Matching tracks ({current}/{total})...")
+
+    matches = match_tracks_bulk(liked, target, threshold=0.75, progress_callback=match_progress)
+    report.matches = matches
+    report.matched = sum(1 for m in matches if m.matched)
+
+    matched_ids = [m.target.track_id for m in matches if m.matched and m.target]
+    if matched_ids:
+        if progress_callback:
+            progress_callback(0, 1, f"Adding {len(matched_ids)} to liked...")
+        added = target.add_to_liked(matched_ids)
+        report.added = added
+        report.failed = len(matched_ids) - added
+
+    save_transfer(
+        source.service_name, target.service_name, "liked_songs",
+        report.total, report.matched, report.added, report.failed,
+    )
+    return report
+
+
+def transfer_followed_artists(
+    source: ConnectorBase,
+    target: ConnectorBase,
+    limit: int = 500,
+    progress_callback=None,
+) -> dict:
+    """Transfer followed artists from source to target. Returns summary dict."""
+    if progress_callback:
+        progress_callback(0, 1, "Fetching followed artists...")
+    artists = source.get_followed_artists(limit=limit)
+    total = len(artists)
+    followed = 0
+
+    for i, artist in enumerate(artists):
+        name = artist.get("name", "")
+        results = target.search(name, limit=1)
+        if results and hasattr(target, "follow_artist"):
+            if target.follow_artist(results[0].track_id):
+                followed += 1
+        if progress_callback:
+            progress_callback(i + 1, total, f"Following artists ({i + 1}/{total})...")
+
+    return {"total": total, "followed": followed, "failed": total - followed}
+
+
+def transfer_saved_albums(
+    source: ConnectorBase,
+    target: ConnectorBase,
+    limit: int = 500,
+    progress_callback=None,
+) -> dict:
+    """Transfer saved albums from source to target. Returns summary dict."""
+    if progress_callback:
+        progress_callback(0, 1, "Fetching saved albums...")
+    albums = source.get_saved_albums(limit=limit)
+    total = len(albums)
+    saved = 0
+
+    for i, album in enumerate(albums):
+        title = album.get("title", "")
+        artist = album.get("artist", "")
+        query = f"{artist} {title}" if artist else title
+        results = target.search(query, limit=1)
+        if results and hasattr(target, "save_album"):
+            if target.save_album(results[0].track_id):
+                saved += 1
+        if progress_callback:
+            progress_callback(i + 1, total, f"Saving albums ({i + 1}/{total})...")
+
+    return {"total": total, "saved": saved, "failed": total - saved}
+
+
+# ── Smart links ───────────────────────────────────────────────────────────────
+
+def generate_smart_links(
+    track: TrackResult,
+    connectors: dict[str, ConnectorBase],
+) -> dict[str, str]:
+    """Find a track across all connected services, returning {service: url}.
+
+    Takes a TrackResult and a dict of service_name -> ConnectorBase instances.
+    Returns a dict of service_name -> URL for each service where the track was found.
+    """
+    links: dict[str, str] = {}
+    links[track.service] = track.url
+
+    for svc_name, conn in connectors.items():
+        if svc_name == track.service:
+            continue
+        result = match_track(track, conn)
+        if result.matched and result.target:
+            links[svc_name] = result.target.url
+
+    return links
