@@ -36,6 +36,16 @@ SETTINGS_SCHEMA = {
 
     # ── UI ───────────────────────────────────────────────────────────────────
     "ui.font_scale": (1.0, "float"),
+
+    # ── Service connectors ─────────────────────────────────────────────────
+    "spotify_client_id":     ("", "str"),
+    "spotify_client_secret": ("", "str"),
+    "youtube_api_key":       ("", "str"),
+    "youtube_client_id":     ("", "str"),
+    "youtube_client_secret": ("", "str"),
+    "soundcloud_client_id":  ("", "str"),
+    "tidal_client_id":       ("", "str"),
+    "tidal_client_secret":   ("", "str"),
 }
 
 # ── Per-page settings schemas ────────────────────────────────────────────────

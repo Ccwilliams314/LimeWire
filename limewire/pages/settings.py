@@ -1,4 +1,5 @@
 """SettingsPage — Tabbed application settings: appearance, audio, playback, etc."""
+import threading
 import tkinter as tk
 from tkinter import ttk, filedialog
 
@@ -52,6 +53,7 @@ class SettingsPage(ScrollFrame):
         self._build_audio(nb)
         self._build_playback(nb)
         self._build_performance(nb)
+        self._build_accounts(nb)
         self._build_about(nb)
 
     # ── Appearance ───────────────────────────────────────────────────────
@@ -280,6 +282,112 @@ class SettingsPage(ScrollFrame):
                      state="readonly", width=10, font=T.F_BODY).pack(side="left", padx=(4, 0))
         self._dd_var.trace_add("write",
             lambda *_: self._set("perf.demucs_device", self._dd_var.get()))
+
+    # ── Accounts ──────────────────────────────────────────────────────────
+    def _build_accounts(self, nb):
+        f = tk.Frame(nb, bg=T.BG)
+        nb.add(f, text="  Accounts  ")
+
+        g = GroupBox(f, "Service Connectors")
+        g.pack(fill="x", padx=10, pady=(10, 6))
+        tk.Label(g, text="Link music services for search, playlist import, and transfer.",
+                 font=T.F_SMALL, bg=T.BG, fg=T.TEXT_DIM, anchor="w").pack(fill="x", pady=(0, 6))
+
+        from limewire.services.connectors.utils import CONNECTOR_LABELS
+        from limewire.services.connectors import storage
+
+        self._acct_status = {}
+
+        for svc, label in CONNECTOR_LABELS.items():
+            row = tk.Frame(g, bg=T.BG)
+            row.pack(fill="x", pady=(0, 4))
+            tk.Label(row, text=label, font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=16, anchor="w").pack(side="left")
+            st_lbl = tk.Label(row, text="Not linked", font=T.F_BODY, bg=T.BG, fg=T.TEXT_DIM, width=14)
+            st_lbl.pack(side="left", padx=(4, 8))
+            self._acct_status[svc] = st_lbl
+
+            def _connect(s=svc):
+                self._connect_service(s)
+            def _disconnect(s=svc):
+                self._disconnect_service(s)
+
+            ClassicBtn(row, "Connect", _connect).pack(side="left", padx=(0, 4))
+            ClassicBtn(row, "Disconnect", _disconnect).pack(side="left")
+
+        # API credentials section
+        g2 = GroupBox(f, "API Credentials")
+        g2.pack(fill="x", padx=10, pady=(0, 6))
+        tk.Label(g2, text="Enter your API keys for services that require them.",
+                 font=T.F_SMALL, bg=T.BG, fg=T.TEXT_DIM, anchor="w").pack(fill="x", pady=(0, 6))
+
+        cred_fields = [
+            ("spotify_client_id", "Spotify Client ID"),
+            ("spotify_client_secret", "Spotify Client Secret"),
+            ("youtube_api_key", "YouTube API Key"),
+            ("soundcloud_client_id", "SoundCloud Client ID"),
+            ("tidal_client_id", "TIDAL Client ID"),
+            ("tidal_client_secret", "TIDAL Client Secret"),
+        ]
+        self._cred_vars = {}
+        for key, label in cred_fields:
+            r = self._row(g2, f"{label}:")
+            var = tk.StringVar(value=self._s(key, ""))
+            self._cred_vars[key] = var
+            ClassicEntry(r, var, width=30).pack(side="left", padx=(4, 0), ipady=2)
+
+        ClassicBtn(g2, "Save Credentials", self._save_credentials).pack(anchor="w", pady=(6, 0))
+
+        # Refresh status
+        self.after(100, self._refresh_account_status)
+
+    def _refresh_account_status(self):
+        try:
+            from limewire.services.connectors import storage
+            storage.init_db()
+            for svc, lbl in self._acct_status.items():
+                acct = storage.load_account(svc)
+                if acct and acct.get("access_token"):
+                    name = acct.get("user_name") or "linked"
+                    lbl.config(text=name[:14], fg=T.LIME_DK)
+                else:
+                    lbl.config(text="Not linked", fg=T.TEXT_DIM)
+        except Exception:
+            pass
+
+    def _connect_service(self, service):
+        """Start OAuth flow for a service in a background thread."""
+        show_toast(self.app, f"Connecting {service}...", "info")
+
+        def run():
+            try:
+                from limewire.services.connectors import build_connector
+                conn = build_connector(service, self.app.settings)
+                if hasattr(conn, "start_auth"):
+                    conn.start_auth()
+                    self.after(0, lambda: (
+                        self._refresh_account_status(),
+                        show_toast(self.app, f"{service} connected!", "info")))
+                else:
+                    self.after(0, lambda: show_toast(self.app, f"{service} doesn't require auth", "info"))
+            except Exception as e:
+                self.after(0, lambda: show_toast(self.app, f"Error: {str(e)[:40]}", "error"))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    def _disconnect_service(self, service):
+        try:
+            from limewire.services.connectors import storage
+            storage.init_db()
+            storage.remove_account(service)
+            self._refresh_account_status()
+            show_toast(self.app, f"{service} disconnected", "info")
+        except Exception as e:
+            show_toast(self.app, f"Error: {str(e)[:40]}", "error")
+
+    def _save_credentials(self):
+        for key, var in self._cred_vars.items():
+            self._set(key, var.get().strip())
+        show_toast(self.app, "API credentials saved", "info")
 
     # ── About ────────────────────────────────────────────────────────────
     def _build_about(self, nb):

@@ -15,6 +15,7 @@ from limewire.ui.widgets import (
     PageSettingsPanel, GearButton,
 )
 from limewire.utils.helpers import fmt_duration
+from limewire.services.connectors.utils import CONNECTOR_LABELS, detect_service_from_url
 
 
 class PlaylistPage(ScrollFrame):
@@ -40,7 +41,8 @@ class PlaylistPage(ScrollFrame):
         self._gear.pack(side="right")
         self.pl_var = tk.StringVar()
         ClassicEntry(r, self.pl_var, width=50).pack(side="left", fill="x", expand=True, ipady=2, padx=(0, 8))
-        LimeBtn(r, "Fetch", self._fetch).pack(side="left")
+        LimeBtn(r, "Fetch", self._fetch).pack(side="left", padx=(0, 4))
+        OrangeBtn(r, "Transfer...", self._open_transfer).pack(side="left")
         self.pl_st = tk.Label(g, text="", font=T.F_SMALL, bg=T.BG, fg=T.TEXT_DIM)
         self.pl_st.pack(anchor="w", pady=(4, 0))
         tg = GroupBox(p, "Tracks")
@@ -91,6 +93,11 @@ class PlaylistPage(ScrollFrame):
     def _fetch(self):
         url = self.pl_var.get().strip()
         if not url:
+            return
+        # Route Spotify/TIDAL/Apple Music/SoundCloud URLs to connector import
+        service = detect_service_from_url(url)
+        if service and service not in ("youtube",):
+            self._import_service_playlist(url)
             return
         self.pl_st.config(text="Fetching...", fg=T.YELLOW)
         threading.Thread(target=self._do_fetch, args=(url,), daemon=True).start()
@@ -146,7 +153,8 @@ class PlaylistPage(ScrollFrame):
         self.sel_cnt.config(text=f"{sum(1 for v in self._cvars if v.get())} selected")
 
     def _dl_sel(self):
-        urls = [t["url"] for t, v in zip(self._tracks, self._cvars) if v.get() and t["url"]]
+        urls = [t.get("_yt_query") or t["url"]
+                for t, v in zip(self._tracks, self._cvars) if v.get() and (t["url"] or t.get("_yt_query"))]
         self._download_urls(urls)
 
     def _retry_failed(self):
@@ -191,3 +199,124 @@ class PlaylistPage(ScrollFrame):
             self.after(0, lambda: self.pl_lbl.config(text=msg, fg=col))
 
         threading.Thread(target=run, daemon=True).start()
+
+    # ── Service playlist import ───────────────────────────────────────
+    def _import_service_playlist(self, url):
+        """Import a playlist from a music service via connectors."""
+        service = detect_service_from_url(url)
+        if not service:
+            self.pl_st.config(text="Could not detect service from URL", fg=T.RED)
+            return
+        self.pl_st.config(text=f"Importing from {CONNECTOR_LABELS.get(service, service)}...", fg=T.YELLOW)
+
+        def run():
+            try:
+                from limewire.services.metadata import connector_import_playlist
+                result = connector_import_playlist(service, url, self.app.settings)
+                if not result or "error" in result:
+                    err = result.get("error", "Import failed") if result else "Import failed"
+                    self.after(0, lambda: self.pl_st.config(text=str(err)[:60], fg=T.RED))
+                    return
+                tracks = result.get("tracks", [])
+                self._tracks = []
+                for t in tracks:
+                    self._tracks.append({
+                        "title": f"{t.get('artist', '')} - {t.get('title', '')}" if t.get("artist") else t.get("title", ""),
+                        "url": "",  # will search YouTube on download
+                        "dur": (t.get("duration_ms", 0) or 0) // 1000,
+                        "_yt_query": f"ytsearch1:{t.get('artist', '')} - {t.get('title', '')}",
+                    })
+                self.after(0, self._render)
+                name = result.get("name", "playlist")
+                self.after(0, lambda: self.pl_st.config(
+                    text=f"Imported {len(self._tracks)} tracks from \"{name}\"", fg=T.LIME_DK))
+            except Exception as e:
+                self.after(0, lambda: self.pl_st.config(text=f"Error: {str(e)[:60]}", fg=T.RED))
+
+        threading.Thread(target=run, daemon=True).start()
+
+    # ── Transfer dialog ───────────────────────────────────────────────
+    def _open_transfer(self):
+        """Open a dialog to transfer playlists between services."""
+        dlg = tk.Toplevel(self.app)
+        dlg.title("Transfer Playlist")
+        dlg.geometry("420x320")
+        dlg.configure(bg=T.BG)
+        dlg.transient(self.app)
+        dlg.grab_set()
+
+        tk.Label(dlg, text="Transfer Playlist Between Services", font=T.F_BOLD,
+                 bg=T.BG, fg=T.TEXT).pack(pady=(12, 8))
+
+        # Source
+        sf = tk.Frame(dlg, bg=T.BG)
+        sf.pack(fill="x", padx=16, pady=4)
+        tk.Label(sf, text="Source:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        src_var = tk.StringVar(value="spotify")
+        from tkinter import ttk
+        src_cb = ttk.Combobox(sf, textvariable=src_var, values=list(CONNECTOR_LABELS.keys()),
+                              state="readonly", width=16, font=T.F_BODY)
+        src_cb.pack(side="left", padx=(4, 0))
+
+        # Source URL
+        uf = tk.Frame(dlg, bg=T.BG)
+        uf.pack(fill="x", padx=16, pady=4)
+        tk.Label(uf, text="Playlist URL:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        url_var = tk.StringVar(value=self.pl_var.get())
+        ClassicEntry(uf, url_var, width=30).pack(side="left", fill="x", expand=True, ipady=2)
+
+        # Target
+        tf = tk.Frame(dlg, bg=T.BG)
+        tf.pack(fill="x", padx=16, pady=4)
+        tk.Label(tf, text="Target:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        tgt_var = tk.StringVar(value="youtube")
+        tgt_cb = ttk.Combobox(tf, textvariable=tgt_var, values=list(CONNECTOR_LABELS.keys()),
+                              state="readonly", width=16, font=T.F_BODY)
+        tgt_cb.pack(side="left", padx=(4, 0))
+
+        # Progress
+        prog = ClassicProgress(dlg)
+        prog.pack(fill="x", padx=16, pady=(12, 4))
+        status = tk.Label(dlg, text="Ready", font=T.F_BODY, bg=T.BG, fg=T.TEXT_DIM)
+        status.pack(padx=16, anchor="w")
+
+        # Result
+        result_lbl = tk.Label(dlg, text="", font=T.F_BODY, bg=T.BG, fg=T.TEXT, wraplength=380)
+        result_lbl.pack(padx=16, pady=(4, 0), anchor="w")
+
+        def do_transfer():
+            src = src_var.get()
+            tgt = tgt_var.get()
+            pl_url = url_var.get().strip()
+            if not pl_url:
+                status.config(text="Enter a playlist URL", fg=T.RED)
+                return
+            if src == tgt:
+                status.config(text="Source and target must differ", fg=T.RED)
+                return
+            status.config(text=f"Transferring {CONNECTOR_LABELS.get(src)} → {CONNECTOR_LABELS.get(tgt)}...", fg=T.YELLOW)
+            prog["value"] = 10
+
+            def run():
+                try:
+                    from limewire.services.metadata import connector_transfer_playlist
+                    report = connector_transfer_playlist(src, tgt, pl_url, self.app.settings)
+                    if "error" in report:
+                        self.after(0, lambda: status.config(text=report["error"][:60], fg=T.RED))
+                        return
+                    self.after(0, lambda: prog.configure(value=100))
+                    msg = (f"Matched: {report.get('matched', 0)}/{report.get('total', 0)}, "
+                           f"Added: {report.get('added', 0)}, Failed: {report.get('failed', 0)}")
+                    col = T.LIME_DK if report.get("failed", 0) == 0 else T.YELLOW
+                    self.after(0, lambda: (
+                        status.config(text="Transfer complete!", fg=col),
+                        result_lbl.config(text=msg, fg=T.TEXT)))
+                except Exception as e:
+                    self.after(0, lambda: status.config(text=f"Error: {str(e)[:60]}", fg=T.RED))
+
+            threading.Thread(target=run, daemon=True).start()
+
+        bf = tk.Frame(dlg, bg=T.BG)
+        bf.pack(fill="x", padx=16, pady=(12, 8))
+        LimeBtn(bf, "Transfer", do_transfer, width=14).pack(side="left", padx=(0, 6))
+        ClassicBtn(bf, "Close", dlg.destroy).pack(side="left")

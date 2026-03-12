@@ -22,7 +22,7 @@ from limewire.utils.helpers import (
     is_url, detect_source, auto_detect_format, sanitize_filename,
     fmt_duration, fetch_thumbnail, open_folder, _SilentLogger,
 )
-from limewire.services.metadata import spotify_to_youtube
+from limewire.services.metadata import spotify_to_youtube, connector_search
 
 
 class SearchPage(ScrollFrame):
@@ -70,7 +70,7 @@ class SearchPage(ScrollFrame):
                                      cursor="hand2", command=self._cancel)
         ClassicBtn(sf, "Preview", self._preview).pack(side="left")
         HSep(p)
-        self.clip_lbl = tk.Label(p, text="  Tip: Paste URL, or type sc:query / bc:query / yt:query to search",
+        self.clip_lbl = tk.Label(p, text="  Tip: Paste URL, or type sc: / yt: / sp: / am: / td: to search services",
                                   font=T.F_SMALL, bg=T.CARD_BG, fg=T.TEXT_DIM,
                                   anchor="w", relief="flat", bd=0, padx=8, pady=4,
                                   highlightthickness=1, highlightbackground=T.CARD_BORDER)
@@ -190,6 +190,18 @@ class SearchPage(ScrollFrame):
         elif url.startswith("yt:"):
             self.url_indicator.config(fg=T.LIME_DK)
             self.clip_lbl.config(text=f"  YouTube search: {url[3:].strip()}", fg=T.ORANGE)
+        elif url.startswith("sp:"):
+            self.url_indicator.config(fg=T.LIME_DK)
+            self.clip_lbl.config(text=f"  Spotify search: {url[3:].strip()}", fg=T.ORANGE)
+        elif url.startswith("am:"):
+            self.url_indicator.config(fg=T.LIME_DK)
+            self.clip_lbl.config(text=f"  Apple Music search: {url[3:].strip()}", fg=T.ORANGE)
+        elif url.startswith("td:"):
+            self.url_indicator.config(fg=T.LIME_DK)
+            self.clip_lbl.config(text=f"  TIDAL search: {url[3:].strip()}", fg=T.ORANGE)
+        elif url.startswith("az:"):
+            self.url_indicator.config(fg=T.LIME_DK)
+            self.clip_lbl.config(text=f"  Amazon Music search: {url[3:].strip()}", fg=T.ORANGE)
         elif is_url(url):
             self.url_indicator.config(fg=T.LIME_DK)
             src = detect_source(url)
@@ -256,6 +268,10 @@ class SearchPage(ScrollFrame):
         if not url:
             return
         # Support search queries: "sc:query" for SoundCloud, "bc:query" for Bandcamp, "yt:query" for YouTube
+        # Also "sp:", "am:", "td:", "az:" for connector-based search → YouTube download
+        if url.startswith(("sp:", "am:", "td:", "az:")):
+            self._connector_search_dl(url[:2], url[3:].strip())
+            return
         if url.startswith("sc:"):
             url = f"scsearch:{url[3:].strip()}"
         elif url.startswith("bc:"):
@@ -438,3 +454,35 @@ class SearchPage(ScrollFrame):
             if sp:
                 sp.file_var.set(self._last_file)
                 self.app._show_tab("stems")
+
+    # ── Connector-based search → YouTube download ─────────────────────
+    def _connector_search_dl(self, prefix, query):
+        """Search a music service via connector, then download via yt-dlp."""
+        from limewire.services.connectors.utils import SOURCE_PREFIXES
+        service = SOURCE_PREFIXES.get(prefix)
+        if not service:
+            self.info_status.config(text=f"Unknown prefix: {prefix}:", fg=T.RED)
+            return
+        self.info_status.config(text=f"Searching {service}...", fg=T.YELLOW)
+        self.app.set_status(f"Connector: searching {service}...")
+
+        def run():
+            results = connector_search(service, query, self.app.settings, limit=1)
+            if not results:
+                self.after(0, lambda: (
+                    self.info_status.config(text=f"No results on {service} for: {query}", fg=T.RED),
+                    self.app.set_status("No results")))
+                return
+            track = results[0]
+            artist = track.get("artist", "")
+            title = track.get("title", "")
+            yt_query = f"ytsearch1:{artist} - {title}" if artist else f"ytsearch1:{title}"
+            self.after(0, lambda: (
+                self.info_title.config(text=title, fg=T.TEXT),
+                self.info_artist.config(text=artist or "?", fg=T.TEXT),
+                self.info_source.config(text=f"{service}→YouTube", fg=T.TEXT_BLUE),
+                self.info_status.config(text=f"Found on {service}, downloading...", fg=T.LIME_DK)))
+            self.url_var.set(yt_query)
+            self.after(0, lambda: self._grab())
+
+        threading.Thread(target=run, daemon=True).start()

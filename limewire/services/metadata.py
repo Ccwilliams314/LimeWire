@@ -220,3 +220,54 @@ def identify_acoustid(filepath):
         return {"error": "No fingerprint match"}
     except Exception as e:
         return {"error": str(e)[:80]}
+
+
+# ── Connector integration ────────────────────────────────────────────────────
+
+def connector_search(service, query, settings, limit=10):
+    """Search a music service via its connector. Returns list of dicts."""
+    try:
+        from limewire.services.connectors.factory import build_connector
+        c = build_connector(service, settings)
+        if not c:
+            return {"error": f"Unknown service: {service}"}
+        results = c.search(query, limit)
+        return [r.to_dict() for r in results]
+    except Exception as e:
+        return {"error": str(e)[:120]}
+
+
+def connector_import_playlist(service, url_or_id, settings):
+    """Import a playlist from a music service. Returns dict with playlist data."""
+    try:
+        from limewire.services.connectors.factory import build_connector
+        from limewire.services.connectors.utils import detect_service_from_url
+        svc = service or detect_service_from_url(url_or_id)
+        if not svc:
+            return {"error": "Could not detect service from URL"}
+        c = build_connector(svc, settings)
+        if not c:
+            return {"error": f"Unknown service: {svc}"}
+        pl = c.get_playlist(url_or_id)
+        if not pl:
+            return {"error": "Playlist not found"}
+        return pl.to_dict()
+    except Exception as e:
+        return {"error": str(e)[:120]}
+
+
+def connector_transfer_playlist(source_svc, target_svc, playlist_id, settings,
+                                target_name=None, progress_cb=None):
+    """Transfer a playlist between services. Returns TransferReport as dict."""
+    try:
+        from limewire.services.connectors.factory import build_connector
+        from limewire.services.connectors.transfer import transfer_playlist
+        src = build_connector(source_svc, settings)
+        tgt = build_connector(target_svc, settings)
+        if not src or not tgt:
+            return {"error": "Invalid service"}
+        report = transfer_playlist(src, tgt, playlist_id, target_name,
+                                   progress_callback=progress_cb)
+        return report.to_dict()
+    except Exception as e:
+        return {"error": str(e)[:120]}

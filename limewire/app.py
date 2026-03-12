@@ -75,6 +75,12 @@ class App(tk.Tk):
         self._dark_mode = False
         self.settings = load_json(SETTINGS_FILE, {"clipboard_watch": True, "proxy": "", "rate_limit": ""})
         apply_defaults(self.settings)
+        # Initialize connector database
+        try:
+            from limewire.services.connectors.storage import init_db
+            init_db()
+        except Exception:
+            pass
         # Apply user font-scale preference
         font_scale = get_setting(self.settings, "ui.font_scale")
         if font_scale and font_scale != 1.0:
