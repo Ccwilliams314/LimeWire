@@ -22,7 +22,7 @@ If applicable, add screenshots.
 **Environment**
 - OS: [e.g. Windows 11]
 - Python version: [e.g. 3.14]
-- LimeWire version: [e.g. 3.0.0]
+- LimeWire version: [e.g. 3.3.0]
 
 **Which tab?**
 - [ ] Search & Grab
@@ -45,6 +45,10 @@ If applicable, add screenshots.
 - [ ] History
 - [ ] Cover Art
 - [ ] Settings
+- [ ] Lyrics
+- [ ] Visualizer
+- [ ] Library
+- [ ] DJ
 - [ ] General / Multiple
 
 **Error output**

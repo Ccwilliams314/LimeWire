@@ -35,4 +35,8 @@ Any other approaches you've thought about.
 - [ ] History
 - [ ] Cover Art
 - [ ] Settings
+- [ ] Lyrics
+- [ ] Visualizer
+- [ ] Library
+- [ ] DJ
 - [ ] New tab / General

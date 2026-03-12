@@ -88,12 +88,27 @@
 - [x] Skin Customizer tool (standalone theme editor with live preview)
 - [x] Backward-compatible launcher + `python -m limewire`
 
+## v3.3.0 — Security & Connectors — Shipped!
+- [x] Music service connectors: Spotify, YouTube, TIDAL, SoundCloud, Deezer, Apple Music, Amazon Music
+- [x] Cross-service playlist transfer, sync, liked songs, followed artists, saved albums
+- [x] OAuth 2.0 PKCE + CSRF state validation on all connectors
+- [x] DPAPI token encryption at rest (Windows CryptProtectData)
+- [x] SSRF prevention with URL domain allowlists
+- [x] Regex-based ID validation on all service-specific identifiers
+- [x] Error message sanitization (strip tokens/secrets before display)
+- [x] Security indicators in Settings > Accounts (per-service badges + info panel)
+- [x] Lyrics tab — synced lyrics display and search
+- [x] Visualizer tab — real-time audio visualizations
+- [x] Library tab — local music library management
+- [x] DJ tab — dual-deck mixing with crossfader and BPM sync
+- [x] 2 new themes: Solarized, Monokai (15 total)
+- [x] Bug fixes: player freq profile race condition, effects undo limit, temp file lifecycle (effects/recorder/remixer), stems batch flag reset, editor selection end label, analyze image card dict keys, batch processor label accuracy, search subtitle language setting
+
 ## Future Ideas
 - [ ] Real-time collaborative mixing via WebSocket
 - [ ] AI-powered auto-mixing suggestions
 - [ ] Built-in sample marketplace
 - [ ] Stem-based karaoke mode with lyrics overlay
-- [ ] Spotify playlist import (resolve to YouTube)
 - [ ] Ableton Live / Logic Pro project export
 
 ---

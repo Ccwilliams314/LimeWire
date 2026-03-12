@@ -1,6 +1,6 @@
 # Contributing to LimeWire
 
-*Operations Manual v1.0*
+*Operations Manual v3.3*
 
 Thanks for your interest in contributing! LimeWire is a modular Python application organized as the `limewire/` package with a backward-compatible `LimeWire.py` launcher.
 
@@ -17,11 +17,11 @@ Thanks for your interest in contributing! LimeWire is a modular Python applicati
 LimeWire/
   LimeWire.py                     # Thin launcher (backward compat)
   limewire/
-    __init__.py                   # __version__ = "3.0.0"
+    __init__.py                   # __version__ = "3.3.0"
     __main__.py                   # python -m limewire support
     app.py                        # App(tk.Tk) main class
     core/
-      theme.py                    # T namespace, 13 THEMES, apply_theme()
+      theme.py                    # T namespace, 15 THEMES, apply_theme()
       constants.py                # Timing, dimension, format constants
       config.py                   # load_json, save_json, file paths
       platform.py                 # IS_WINDOWS, IS_MACOS, IS_LINUX
@@ -39,6 +39,19 @@ LimeWire/
       audio_processing.py         # Waveform, demucs, pydub, spectrogram
       dj_integrations.py          # FL Studio, Serato
       plugins.py                  # PluginBase, PluginManager (hash-based trust)
+      connectors/
+        base.py                   # ConnectorBase ABC, TrackResult, PlaylistResult
+        factory.py                # build_connector(), available_services()
+        oauth.py                  # OAuth 2.0 with PKCE + CSRF state
+        storage.py                # DPAPI-encrypted token storage (SQLite)
+        spotify.py                # Spotify connector
+        youtube.py                # YouTube Music connector
+        tidal.py                  # TIDAL connector
+        soundcloud.py             # SoundCloud connector
+        deezer.py                 # Deezer connector
+        transfer.py               # Cross-service transfer engine
+        csv_io.py                 # CSV export/import for playlists
+        utils.py                  # URL detection, service labels
     security/
       safe_paths.py               # Path traversal prevention, atomic writes
       safe_subprocess.py          # Binary allowlist (ffmpeg/ffprobe/yt-dlp only)
@@ -52,7 +65,7 @@ LimeWire/
       toast.py                    # _ToastManager, show_toast
       command_palette.py          # CommandPalette, ShortcutRegistry
     pages/
-      __init__.py                 # Re-exports all 20 page classes
+      __init__.py                 # Re-exports all 24 page classes
       search.py                   # SearchPage
       download.py                 # DownloadPage
       playlist.py                 # PlaylistPage
@@ -73,6 +86,10 @@ LimeWire/
       history.py                  # HistoryPage
       cover_art.py                # CoverArtPage
       settings.py                 # SettingsPage
+      lyrics.py                   # LyricsPage
+      visualizer.py               # VisualizerPage
+      library.py                  # LibraryPage
+      dj.py                       # DJPage
   tests/
     conftest.py                   # Shared fixtures
     test_safe_paths.py            # Path security tests
@@ -84,7 +101,7 @@ LimeWire/
     test_config.py                # Config I/O tests
     test_constants.py             # Constants validation tests
     test_helpers.py               # Utility function tests
-  screenshots/                    # Tab screenshots for README (20 tabs)
+  screenshots/                    # Tab screenshots for README (24 tabs)
   SECURITY.md                     # Security policy and vulnerability scan
   requirements.txt                # Python dependencies
   setup.bat                       # Automated installer (Windows)
@@ -172,14 +189,17 @@ All stored in `~/.limewire_*.json`:
 - Use `sanitize_filename()` for any filename from external sources
 - Use `tempfile.mkstemp()` for temporary files (never hardcoded paths)
 - Use security modules for subprocess calls, JSON I/O, and path operations
+- Service connectors: extend `ConnectorBase` in `services/connectors/base.py`; use `oauth.py` for auth, `storage.py` for token persistence
+- All connector IDs must be validated with regex before API calls
+- Use `_sanitize_error()` to strip tokens from error messages
 
-### Pages (20 tabs)
+### Pages (24 tabs)
 
 | Tab | Class | Purpose |
 |-----|-------|---------|
 | Search & Grab | `SearchPage` | URL download with auto-detect |
 | Batch Download | `DownloadPage` | Multi-URL queue |
-| Playlist | `PlaylistPage` | YouTube playlist fetch |
+| Playlist | `PlaylistPage` | Playlist fetch + cross-service transfer |
 | Converter | `ConverterPage` | Format conversion |
 | Player | `PlayerPage` | Playback with waveform |
 | Analyze | `AnalyzePage` | BPM/key/loudness analysis |
@@ -196,7 +216,11 @@ All stored in `~/.limewire_*.json`:
 | Scheduler | `SchedulerPage` | Scheduled downloads |
 | History | `HistoryPage` | Download log |
 | Cover Art | `CoverArtPage` | Album artwork manager |
-| Settings | `SettingsPage` | Theme, proxy, preferences |
+| Settings | `SettingsPage` | Theme, proxy, accounts, preferences |
+| Lyrics | `LyricsPage` | Synced lyrics display |
+| Visualizer | `VisualizerPage` | Real-time audio visualizations |
+| Library | `LibraryPage` | Local music library manager |
+| DJ | `DJPage` | Dual-deck mixing with crossfader |
 
 ## License
 

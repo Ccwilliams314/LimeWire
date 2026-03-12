@@ -16,12 +16,12 @@
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Ccwilliams314/LimeWire/check.yml?style=flat-square&label=CI&logo=github)](https://github.com/Ccwilliams314/LimeWire/actions)
 [![Issues](https://img.shields.io/github/issues/Ccwilliams314/LimeWire?style=flat-square&color=FF1744)](https://github.com/Ccwilliams314/LimeWire/issues)
-![20 Tabs](https://img.shields.io/badge/tabs-20-2ECC71?style=flat-square)
-![13 Themes](https://img.shields.io/badge/themes-13-BD93F9?style=flat-square)
+![24 Tabs](https://img.shields.io/badge/tabs-24-2ECC71?style=flat-square)
+![15 Themes](https://img.shields.io/badge/themes-15-BD93F9?style=flat-square)
 ![6 Languages](https://img.shields.io/badge/languages-6-FF9E64?style=flat-square)
 ![185 Tests](https://img.shields.io/badge/tests-185-00E676?style=flat-square)
 
-**Download &bull; Play &bull; Analyze &bull; Edit &bull; Separate &bull; Remix &bull; Process**
+**Download &bull; Play &bull; Analyze &bull; Edit &bull; Separate &bull; Remix &bull; Transfer &bull; Process**
 
 [Getting Started](#-quick-start) &bull; [Features](#-features) &bull; [Screenshots](#-screenshots) &bull; [Themes](#-themes) &bull; [Architecture](#-architecture)
 
@@ -31,7 +31,7 @@
 
 ## What is LimeWire?
 
-A **20-tab all-in-one audio production studio** built with Python and tkinter. From simple YouTube downloads to AI-powered stem separation, professional audio analysis, non-destructive editing, and batch processing — all in a single app with 13 themes and 6 languages.
+A **24-tab all-in-one audio production studio** built with Python and tkinter. From simple YouTube downloads to AI-powered stem separation, professional audio analysis, non-destructive editing, cross-platform playlist transfers, and batch processing — all in a single app with 15 themes and 6 languages.
 
 ### Headline Features
 
@@ -46,7 +46,8 @@ A **20-tab all-in-one audio production studio** built with Python and tkinter. F
 | :control_knobs: | **Effects Chain** | Gain, compressor, reverb, delay, chorus, filters |
 | :musical_score: | **Stem Remixer** | Per-stem volume, pan, mute/solo mixing console |
 | :zap: | **Batch Processor** | Normalize, convert, fade, trim silence at scale |
-| :art: | **13 Live Themes** | Switch instantly — no restart, includes custom theme loader |
+| :repeat: | **Cross-Platform Transfers** | Sync playlists, liked songs, artists between Spotify, YouTube, TIDAL, Deezer, SoundCloud |
+| :art: | **15 Live Themes** | Switch instantly — no restart, includes custom theme loader |
 
 ---
 
@@ -100,7 +101,7 @@ setup.bat
 ## :camera: Screenshots
 
 <details open>
-<summary><strong>All 20 tabs</strong></summary>
+<summary><strong>All 24 tabs</strong></summary>
 
 <table>
 <tr>
@@ -143,6 +144,14 @@ setup.bat
 <td><strong>Cover Art</strong><br><img src="screenshots/19_coverart.png" width="100%"></td>
 <td><strong>Settings</strong><br><img src="screenshots/20_settings.png" width="100%"></td>
 </tr>
+<tr>
+<td><strong>Lyrics</strong><br><img src="screenshots/21_lyrics.png" width="100%"></td>
+<td><strong>Visualizer</strong><br><img src="screenshots/22_visualizer.png" width="100%"></td>
+</tr>
+<tr>
+<td><strong>Library</strong><br><img src="screenshots/23_library.png" width="100%"></td>
+<td><strong>DJ</strong><br><img src="screenshots/24_dj.png" width="100%"></td>
+</tr>
 </table>
 
 </details>
@@ -157,7 +166,7 @@ setup.bat
 |-----|-------------|
 | **Search & Grab** | Paste any URL, auto-detect source, choose format (MP3/WAV/FLAC/OGG/M4A/AAC/OPUS), quality selector |
 | **Batch Download** | Queue multiple URLs, persistent queue, retry failed, progress tracking |
-| **Playlist** | YouTube playlist fetch, individual track selection, batch download |
+| **Playlist** | YouTube playlist fetch, cross-service transfer (Spotify, YouTube, TIDAL, Deezer, SoundCloud, Apple Music, Amazon Music), sync liked songs, artists, albums |
 | **Converter** | Format conversion via ffmpeg, metadata preservation |
 | **History** | Searchable download log with replay and management |
 | **Scheduler** | Schedule downloads for specific times with background polling |
@@ -182,12 +191,16 @@ setup.bat
 | **Recorder** | Mic recording, VU meter, live waveform, Whisper AI transcription, SRT export |
 | **Pitch/Time** | Pitch shift (semitones), time stretch, BPM auto-detect, vocal isolation |
 | **Effects** | Pedalboard chain: gain, compressor, limiter, reverb, delay, chorus, filters. Save/load presets |
-| **Batch Process** | Bulk normalize LUFS, convert format, fade in/out, trim silence, strip metadata |
+| **Batch Process** | Bulk normalize loudness (dBFS), convert format, fade in/out, trim silence, strip metadata |
 | **Samples** | Freesound.org browser with preview and download |
+| **Lyrics** | Fetch and display synced lyrics, search by title/artist |
+| **Visualizer** | Real-time audio visualizations with multiple modes |
+| **Library** | Local music library management with smart folders |
+| **DJ** | Dual-deck mixing with crossfader and BPM sync |
 
 ### Settings & Customization
 
-- **13 built-in themes** with instant live switching (no restart)
+- **15 built-in themes** with instant live switching (no restart)
 - **Community theme loader** — load custom JSON themes via Tools menu
 - **Skin Customizer** (`skin_customizer.py`) — visual theme editor with live preview
 - **6 languages** — English, Spanish, French, German, Japanese, Portuguese
@@ -216,7 +229,7 @@ setup.bat
 
 ## :art: Themes
 
-13 built-in themes with **instant live switching** — no restart required:
+15 built-in themes with **instant live switching** — no restart required:
 
 | Theme | Preview |
 |-------|---------|
@@ -233,8 +246,10 @@ setup.bat
 | **Nord** | Arctic blue-grey |
 | **Gruvbox** | Warm retro earth tones |
 | **High Contrast** | Maximum accessibility |
+| **Solarized** | Precision colors, reduced eye strain |
+| **Monokai** | Vibrant developer classic |
 
-Each theme defines **37 semantic color tokens** (backgrounds, text, accents, borders, cards, states, surfaces, focus rings) for pixel-perfect consistency across all 20 tabs.
+Each theme defines **37 semantic color tokens** (backgrounds, text, accents, borders, cards, states, surfaces, focus rings) for pixel-perfect consistency across all 24 tabs.
 
 **Create your own:** Run `python skin_customizer.py` to visually design custom themes and export them as JSON files loadable via **Tools > Load Community Theme**.
 
@@ -249,11 +264,11 @@ LimeWire/
   LimeWire.py                 # Thin launcher (backward compat)
   skin_customizer.py          # Visual theme editor
   limewire/
-    __init__.py               # __version__ = "3.0.0"
+    __init__.py               # __version__ = "3.3.0"
     __main__.py               # python -m limewire
     app.py                    # App(tk.Tk) main class
     core/
-      theme.py                # T namespace, 13 themes, apply_theme()
+      theme.py                # T namespace, 15 themes, apply_theme()
       constants.py            # Timing, dimension, format constants
       config.py               # JSON persistence, file paths
       platform.py             # OS detection
@@ -261,10 +276,24 @@ LimeWire/
       audio_backend.py        # Playback engine
     i18n/                     # 6-language localization
     utils/                    # Helpers, sanitization
-    services/                 # Analysis, metadata, cover art, audio processing
+    services/
+      analysis.py             # BPM/key, loudness, harmonics, Camelot
+      metadata.py             # Shazam, MusicBrainz, AcoustID, lyrics
+      cover_art.py            # Extract/embed/fetch album artwork
+      audio_processing.py     # Waveform, demucs, pydub, spectrogram
+      connectors/             # Music service connectors (7 services)
+        base.py               # ConnectorBase ABC, TrackResult, PlaylistResult
+        oauth.py              # OAuth 2.0 with PKCE + CSRF state
+        storage.py            # DPAPI-encrypted token storage
+        spotify.py            # Spotify connector
+        youtube.py            # YouTube Music connector
+        tidal.py              # TIDAL connector
+        soundcloud.py         # SoundCloud connector
+        deezer.py             # Deezer connector
+        transfer.py           # Cross-service playlist/library transfer engine
     security/                 # Path confinement, subprocess allowlist, JSON validation
     ui/                       # Widgets, styles, tooltips, toasts, command palette
-    pages/                    # 20 page classes (one per tab)
+    pages/                    # 24 page classes (one per tab)
   tests/                      # 185 tests (pytest)
 ```
 
@@ -286,6 +315,18 @@ Pages receive `app` as a constructor arg — they never import `app.py` directly
 | `safe_subprocess.py` | Binary allowlist (ffmpeg, ffprobe, yt-dlp only) |
 | `safe_json.py` | Size limits (5 MB), depth checks (10), key allowlists |
 | `plugin_policy.py` | SHA-256 hash trust — scan without execute |
+| `connectors/oauth.py` | OAuth 2.0 PKCE + CSRF state validation for all services |
+| `connectors/storage.py` | Windows DPAPI token encryption at rest |
+
+### Connector Security
+
+All 7 music service connectors are hardened with:
+- **OAuth 2.0 PKCE** — Proof Key for Code Exchange prevents authorization code interception
+- **CSRF Protection** — Cryptographic state parameter validates OAuth callbacks
+- **Encrypted Storage** — Tokens encrypted at rest via Windows DPAPI (`CryptProtectData`)
+- **Input Validation** — Regex-based ID validation on all service-specific identifiers
+- **SSRF Prevention** — URL domain allowlists block server-side request forgery
+- **Error Sanitization** — Tokens and secrets stripped from error messages before display
 
 ### Data Files
 
@@ -328,7 +369,7 @@ python -m pytest tests/ -v
 
 | Document | Description |
 |----------|-------------|
-| [Operations Manual (PDF)](LimeWire_v2.0_Operation_Manual.pdf) | Comprehensive guide with screenshots for every feature |
+| [Operations Manual (PDF)](LimeWire_v2.0_Operation_Manual.pdf) | Comprehensive guide with screenshots for every feature (v2.0 edition) |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Developer guide, project structure, how to contribute |
 | [SECURITY.md](SECURITY.md) | Security policy, vulnerability scan report |
 | [CHANGELOG.md](CHANGELOG.md) | Version history |

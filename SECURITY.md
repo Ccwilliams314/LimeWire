@@ -4,7 +4,8 @@
 
 | Version | Supported |
 |---------|-----------|
-| 3.0.x   | Yes       |
+| 3.3.x   | Yes       |
+| 3.0.x   | No        |
 | 2.0.x   | No        |
 | 1.x     | No        |
 
@@ -26,11 +27,13 @@ LimeWire is a local desktop application. Security concerns include:
 - Dependencies with known CVEs
 - Plugin system code execution
 - Theme file globals overwrite
+- OAuth token theft or misuse
+- Service connector SSRF or injection
 
-## Vulnerability Scan Report (v3.0.0)
+## Vulnerability Scan Report (v3.3.0)
 
-**Scan Date:** 2026-03-09
-**Method:** Manual code review of full codebase (~7,300 lines)
+**Scan Date:** 2026-03-11
+**Method:** Manual code review of full codebase (~9,000 lines across 24 pages + 7 connectors)
 
 ### Summary
 
@@ -39,7 +42,7 @@ LimeWire is a local desktop application. Security concerns include:
 | Critical | 0     | —     | 0         |
 | High     | 1     | 1     | 0         |
 | Medium   | 4     | 4     | 0         |
-| Low      | 12    | 0     | 12        |
+| Low      | 12    | 1     | 11        |
 | Info     | 2     | —     | 2         |
 
 ### High Severity (0 remaining)
@@ -66,7 +69,7 @@ LimeWire is a local desktop application. Security concerns include:
 | 1.3 | subprocess calls with file paths | Mitigated (list-form, never shell=True, timeouts) |
 | 2.2 | JSON playlist imports trusted file paths | Partially mitigated (extension filter + exists check) |
 | 4.3 | Spoofed User-Agent for Shazam API | Noted (common practice) |
-| 5.2 | Temp file cleanup race during audio playback | Partially mitigated (secure creation, functional edge case) |
+| 5.2 | Temp file cleanup race during audio playback | **Fixed in v3.3.0** — deferred cleanup pattern (store path, delete on next use) |
 | 6.2 | Freesound API token in URL query parameter | Noted (API's required auth method) |
 | 8.2 | Player playlist mutations without lock | Acceptable (all on main tkinter thread) |
 | 8.3 | Discovery library dict from background thread | Low risk (Python GIL protection) |
@@ -114,3 +117,18 @@ LimeWire is a local desktop application. Security concerns include:
 - Error strings truncated to 60-80 chars before display (`str(e)[:60]`)
 - Crash tracebacks written to `~/.limewire_crash.log` (not shown in UI)
 - `winfo_exists()` check before `.after()` rescheduling prevents shutdown crashes
+- Connector errors sanitized via `_sanitize_error()` — tokens, secrets, and keys stripped before display
+
+### Service Connector Security (v3.3.0)
+
+All 7 music service connectors (Spotify, YouTube, TIDAL, SoundCloud, Deezer, Apple Music, Amazon Music) are hardened with defense-in-depth:
+
+| Protection | Implementation |
+|-----------|---------------|
+| **OAuth 2.0 PKCE** | `generate_pkce()` creates 128-byte code verifier + S256 challenge. Prevents authorization code interception. |
+| **CSRF State** | `generate_state()` creates 64-byte cryptographic state parameter. Validated on every OAuth callback. |
+| **Encrypted Storage** | Tokens encrypted at rest via Windows DPAPI (`CryptProtectData`/`CryptUnprotectData`). Schema migration removes plaintext `client_secret` columns. |
+| **ID Validation** | Regex patterns (`_SPOTIFY_ID_RE`, `_TIDAL_ID_RE`, `_SC_ID_RE`, `_DEEZER_ID_RE`, `_valid_video_id`, `_valid_playlist_id`) validate all service-specific identifiers before API calls. Prevents path traversal and injection. |
+| **SSRF Prevention** | URL domain allowlists (`_safe_yt_url`, `_safe_sc_url`) restrict outbound requests to expected API domains only. |
+| **Error Sanitization** | `_sanitize_error()` scrubs tokens, client secrets, and API keys from error messages before they reach the UI or logs. |
+| **Pagination Bounds** | `MAX_TRACKS = 10000` caps all paginated API responses to prevent resource exhaustion. |
