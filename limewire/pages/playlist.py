@@ -256,7 +256,7 @@ class PlaylistPage(ScrollFrame):
         tk.Label(tf0, text="Type:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
         type_var = tk.StringVar(value="playlist")
         type_cb = ttk.Combobox(tf0, textvariable=type_var,
-                               values=["playlist", "all_playlists", "liked_songs", "followed_artists", "saved_albums"],
+                               values=["playlist", "sync_playlist", "all_playlists", "liked_songs", "followed_artists", "saved_albums"],
                                state="readonly", width=18, font=T.F_BODY)
         type_cb.pack(side="left", padx=(4, 0))
 
@@ -276,9 +276,22 @@ class PlaylistPage(ScrollFrame):
         url_var = tk.StringVar(value=self.pl_var.get())
         ClassicEntry(url_frame, url_var, width=30).pack(side="left", fill="x", expand=True, ipady=2)
 
+        # Target playlist URL (for sync)
+        tgt_url_frame = tk.Frame(dlg, bg=T.BG)
+        tk.Label(tgt_url_frame, text="Target URL:", font=T.F_BOLD, bg=T.BG, fg=T.TEXT, width=12, anchor="w").pack(side="left")
+        tgt_url_var = tk.StringVar()
+        ClassicEntry(tgt_url_frame, tgt_url_var, width=30).pack(side="left", fill="x", expand=True, ipady=2)
+
         def on_type_change(*_):
-            show = type_var.get() == "playlist"
-            url_frame.pack(fill="x", padx=16, pady=4) if show else url_frame.pack_forget()
+            t = type_var.get()
+            if t in ("playlist", "sync_playlist"):
+                url_frame.pack(fill="x", padx=16, pady=4)
+            else:
+                url_frame.pack_forget()
+            if t == "sync_playlist":
+                tgt_url_frame.pack(fill="x", padx=16, pady=4)
+            else:
+                tgt_url_frame.pack_forget()
         type_var.trace_add("write", on_type_change)
 
         # Target
@@ -335,10 +348,13 @@ class PlaylistPage(ScrollFrame):
                 status.config(text="Source and target must differ", fg=T.RED)
                 return
 
-            if xfer_type == "playlist":
+            if xfer_type in ("playlist", "sync_playlist"):
                 pl_url = url_var.get().strip()
                 if not pl_url:
-                    status.config(text="Enter a playlist URL", fg=T.RED)
+                    status.config(text="Enter a source playlist URL", fg=T.RED)
+                    return
+                if xfer_type == "sync_playlist" and not tgt_url_var.get().strip():
+                    status.config(text="Enter a target playlist URL", fg=T.RED)
                     return
 
             src_label = CONNECTOR_LABELS.get(src, src)
@@ -350,7 +366,8 @@ class PlaylistPage(ScrollFrame):
                 try:
                     from limewire.services.connectors import build_connector
                     from limewire.services.connectors.transfer import (
-                        transfer_playlist as do_xfer, batch_transfer_playlists,
+                        transfer_playlist as do_xfer, sync_playlist,
+                        batch_transfer_playlists,
                         transfer_liked_songs, transfer_followed_artists, transfer_saved_albums,
                     )
                     s = self.app.settings
@@ -366,6 +383,16 @@ class PlaylistPage(ScrollFrame):
                         msg = f"Matched: {rpt.matched}/{rpt.total}, Added: {rpt.added}, Failed: {rpt.failed}"
                         col = T.LIME_DK if rpt.failed == 0 else T.YELLOW
                         self.after(0, lambda: (status.config(text="Transfer complete!", fg=col), show_report(rpt)))
+
+                    elif xfer_type == "sync_playlist":
+                        rpt = sync_playlist(src_conn, tgt_conn,
+                                            url_var.get().strip(), tgt_url_var.get().strip())
+                        self.after(0, lambda: prog.configure(value=100))
+                        new_added = rpt.added
+                        skipped = rpt.skipped
+                        msg = f"Sync done: {new_added} new, {skipped} already existed"
+                        col = T.LIME_DK
+                        self.after(0, lambda: (status.config(text=msg, fg=col), show_report(rpt)))
 
                     elif xfer_type == "all_playlists":
                         reports = batch_transfer_playlists(src_conn, tgt_conn)
